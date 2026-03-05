@@ -13,7 +13,13 @@ cd "$TEMP_DIR"
 git sparse-checkout set publish
 
 # Copy content into Astro's content directory
-CONTENT_DIR="${GITHUB_WORKSPACE:-$(cd "$(dirname "$0")/.." && pwd)}/src/content"
+if [ -n "$GITHUB_WORKSPACE" ]; then
+  CONTENT_DIR="$GITHUB_WORKSPACE/src/content"
+else
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  CONTENT_DIR="$SCRIPT_DIR/../src/content"
+fi
+
 rm -rf "$CONTENT_DIR"/*
 
 for section in "$TEMP_DIR"/publish/*/; do
