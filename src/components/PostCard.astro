@@ -1,0 +1,32 @@
+---
+interface Props {
+  title: string;
+  date: Date;
+  description?: string;
+  section: string;
+  slug: string;
+  readingTime: number;
+}
+
+const { title, date, description, section, slug, readingTime } = Astro.props;
+---
+
+<article style="margin-bottom: 2rem; padding-bottom: 2rem; border-bottom: 1px dashed var(--border);">
+  <h2 style="margin-top: 0; margin-bottom: 0.5rem;">
+    <a href={`/${section}/${slug}`} style="border: none;">
+      {title}
+    </a>
+  </h2>
+  <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+    {date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+    <span> · </span>
+    <span>{section}</span>
+    <span> · </span>
+    <span>{readingTime} min</span>
+  </div>
+  {description && (
+    <p style="color: var(--text-muted); margin-bottom: 0;">
+      {description}
+    </p>
+  )}
+</article>

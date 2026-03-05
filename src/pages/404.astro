@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseLayout title="404 - Not Found">
+  <Header />
+  <main style="max-width: var(--content-width); margin: 0 auto; padding: 4rem 1rem; text-align: center;">
+    <h1 style="font-size: 4rem; margin-bottom: 1rem;">404</h1>
+    <p style="font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2rem;">
+      Page not found
+    </p>
+    <a href="/" style="font-size: 1rem;">
+      ← Back to home
+    </a>
+  </main>
+  <Footer />
+</BaseLayout>

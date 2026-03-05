@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import PostCard from '../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+
+// Get all posts from all collections
+const allPosts = await Promise.all([
+  getCollection('blog'),
+  getCollection('notes'),
+  getCollection('projects'),
+  getCollection('guides'),
+  getCollection('til'),
+]).then(collections => {
+  return collections.flat().map((entry) => ({
+    ...entry,
+    section: entry.collection,
+  }));
+});
+
+// Filter out drafts and sort by date
+const posts = allPosts
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
+  .slice(0, 10); // Show 10 most recent
+
+// Calculate reading time
+function getReadingTime(content: string): number {
+  const words = content.trim().split(/\s+/).length;
+  return Math.ceil(words / 200);
+}
+---
+
+<BaseLayout title="Home">
+  <Header />
+  <main style="max-width: var(--content-width); margin: 0 auto; padding: 2rem 1rem;">
+    <div style="margin-bottom: 3rem;">
+      <hr style="margin-bottom: 2rem;" />
+      <h2 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 2rem;">Recent</h2>
+    </div>
+
+    {posts.map(post => (
+      <PostCard
+        title={post.data.title}
+        date={post.data.date}
+        description={post.data.description}
+        section={post.section}
+        slug={post.id}
+        readingTime={getReadingTime(post.body)}
+      />
+    ))}
+  </main>
+  <Footer />
+</BaseLayout>

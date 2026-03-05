@@ -1,0 +1,13 @@
+---
+interface Props {
+  content: string;
+}
+
+const { content } = Astro.props;
+
+// Simple reading time calculation: ~200 words per minute
+const words = content.trim().split(/\s+/).length;
+const minutes = Math.ceil(words / 200);
+---
+
+<span>{minutes} min</span>
