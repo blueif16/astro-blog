@@ -1,0 +1,22 @@
+{
+  "name": "astro-blog",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.15",
+    "@astrojs/vercel": "^9.0.4",
+    "astro": "^5.17.1",
+    "reading-time": "^1.5.0",
+    "rehype-katex": "^7.0.1",
+    "rehype-pretty-code": "^0.14.3",
+    "remark-math": "^6.0.0",
+    "remark-obsidian-callout": "^1.5.1",
+    "shiki": "^4.0.1"
+  }
+}

@@ -1,0 +1,24 @@
+---
+const sections = [
+  { name: 'blog', label: 'blog' },
+  { name: 'notes', label: 'notes' },
+  { name: 'projects', label: 'projects' },
+];
+---
+
+<header style="max-width: var(--content-width); margin: 0 auto; padding: 2rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+  <a href="/" style="font-size: 1.5rem; font-weight: 700; font-family: var(--font-heading); border: none;">
+    SHIRAN
+  </a>
+  <nav>
+    <ul style="display: flex; gap: 1.5rem; list-style: none; padding: 0; margin: 0;">
+      {sections.map(section => (
+        <li>
+          <a href={`/${section.name}`} style="font-size: 0.95rem; color: var(--text-muted);">
+            {section.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+</header>

@@ -1,0 +1,50 @@
+---
+import SectionLayout from '../../layouts/SectionLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const sections = ['blog', 'notes', 'projects', 'guides', 'til'];
+
+  return sections.map(section => ({
+    params: { section },
+  }));
+}
+
+const { section } = Astro.params;
+
+// Get all posts from this section
+const posts = (await getCollection(section as any))
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+// Calculate reading time
+function getReadingTime(content: string): number {
+  const words = content.trim().split(/\s+/).length;
+  return Math.ceil(words / 200);
+}
+
+const sectionTitles: Record<string, string> = {
+  blog: 'Blog',
+  notes: 'Notes',
+  projects: 'Projects',
+  guides: 'Guides',
+  til: 'Today I Learned',
+};
+---
+
+<SectionLayout title={sectionTitles[section!]} description={`All posts in ${sectionTitles[section!]}`}>
+  <h1>{sectionTitles[section!]}</h1>
+  <hr style="margin-bottom: 2rem;" />
+
+  {posts.map(post => (
+    <PostCard
+      title={post.data.title}
+      date={post.data.date}
+      description={post.data.description}
+      section={section!}
+      slug={post.id}
+      readingTime={getReadingTime(post.body)}
+    />
+  ))}
+</SectionLayout>
