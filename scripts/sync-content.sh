@@ -1,6 +1,14 @@
 #!/bin/bash
 set -euo pipefail
 
+# Determine content directory BEFORE changing directories
+if [ -n "${GITHUB_WORKSPACE:-}" ]; then
+  CONTENT_DIR="$GITHUB_WORKSPACE/src/content"
+else
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  CONTENT_DIR="$SCRIPT_DIR/../src/content"
+fi
+
 # Clone the private vault (sparse checkout — only publish/)
 TEMP_DIR=$(mktemp -d)
 echo "Cloning vault content..."
@@ -11,14 +19,6 @@ git clone --depth 1 --filter=blob:none --sparse \
 
 cd "$TEMP_DIR"
 git sparse-checkout set publish
-
-# Copy content into Astro's content directory
-if [ -n "${GITHUB_WORKSPACE:-}" ]; then
-  CONTENT_DIR="$GITHUB_WORKSPACE/src/content"
-else
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  CONTENT_DIR="$SCRIPT_DIR/../src/content"
-fi
 
 rm -rf "$CONTENT_DIR"/*
 
