@@ -1,43 +1,74 @@
-# Astro Starter Kit: Minimal
+# Obsidian → Astro Blog
 
-```sh
-npm create astro@latest -- --template minimal
+Complete two-repo architecture for auto-deploying an Obsidian vault to an Astro blog.
+
+## Quick Links
+
+- **Architecture Documentation:** [ARCHITECTURE.md](./ARCHITECTURE.md) - Complete system documentation
+- **Setup Guide:** [SETUP-COMPLETE.md](./SETUP-COMPLETE.md) - Initial setup steps
+- **Live Site:** [Your Vercel URL]
+- **Vault Repo:** https://github.com/blueif16/brain
+- **Blog Repo:** https://github.com/blueif16/astro-blog
+
+## How It Works
+
+Write in Obsidian → Save → Auto-deploys to Vercel in ~60 seconds.
+
+1. Write markdown in `publish/` folder of your Obsidian vault
+2. Obsidian Git auto-commits and pushes
+3. GitHub Action fires Vercel deploy hook
+4. Vercel clones vault (sparse checkout), syncs content, builds site
+5. Changes go live
+
+## Writing Posts
+
+Create markdown files in `publish/blog/`, `publish/notes/`, etc.:
+
+```yaml
+---
+title: "Post Title"
+date: 2026-03-04
+description: "Brief description"
+tags: [tag1, tag2]
+---
+
+Your content with [[wikilinks]], callouts, math...
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Design
 
-## 🚀 Project Structure
+Newsprint-inspired aesthetic:
+- PT Serif body text
+- 38rem content width
+- Warm cream background
+- Editorial, minimal layout
 
-Inside of your Astro project, you'll see the following folders and files:
+## Tech Stack
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+- **Writing:** Obsidian
+- **Static Site Generator:** Astro 5.x
+- **Deployment:** Vercel
+- **CI/CD:** GitHub Actions + Deploy Hooks
+
+## Documentation
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for:
+- Complete system architecture
+- Repository structure
+- Content flow diagrams
+- Design system details
+- Deployment setup
+- Troubleshooting guide
+- Maintenance instructions
+
+## Local Development
+
+```bash
+npm run dev  # http://localhost:4321
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Status
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
-
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+✅ Deployed and working
+✅ Auto-deploy pipeline active
+✅ All Obsidian features supported (wikilinks, callouts, math)
