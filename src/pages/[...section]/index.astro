@@ -5,24 +5,14 @@ import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const sections = ['blog', 'notes', 'projects', 'guides', 'til'];
-
-  return sections.map(section => ({
-    params: { section },
-  }));
+  return sections.map(section => ({ params: { section } }));
 }
 
 const { section } = Astro.params;
 
-// Get all posts from this section
 const posts = (await getCollection(section as any))
   .filter(post => !post.data.draft)
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-
-// Calculate reading time
-function getReadingTime(content: string): number {
-  const words = content.trim().split(/\s+/).length;
-  return Math.ceil(words / 200);
-}
 
 const sectionTitles: Record<string, string> = {
   blog: 'Blog',
@@ -31,20 +21,32 @@ const sectionTitles: Record<string, string> = {
   guides: 'Guides',
   til: 'Today I Learned',
 };
+
+// Group by year
+const postsByYear = posts.reduce((acc, post) => {
+  const year = post.data.date.getFullYear().toString();
+  if (!acc[year]) acc[year] = [];
+  acc[year].push(post);
+  return acc;
+}, {} as Record<string, typeof posts>);
+
+const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
 ---
 
-<SectionLayout title={sectionTitles[section!]} description={`All posts in ${sectionTitles[section!]}`}>
-  <h1>{sectionTitles[section!]}</h1>
-  <hr style="margin-bottom: 2rem;" />
-
-  {posts.map(post => (
-    <PostCard
-      title={post.data.title}
-      date={post.data.date}
-      description={post.data.description}
-      section={section!}
-      slug={post.id}
-      readingTime={getReadingTime(post.body)}
-    />
-  ))}
+<SectionLayout title={sectionTitles[section!]} description={`All posts in ${sectionTitles[section!]}`} count={posts.length}>
+  <div class="post-list">
+    {years.map(year => (
+      <div class="year-group">
+        <div class="year-label">{year}</div>
+        {postsByYear[year].map(post => (
+          <PostCard
+            title={post.data.title}
+            date={post.data.date}
+            section={section!}
+            slug={post.id}
+          />
+        ))}
+      </div>
+    ))}
+  </div>
 </SectionLayout>

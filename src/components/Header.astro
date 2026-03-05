@@ -4,21 +4,65 @@ const sections = [
   { name: 'notes', label: 'notes' },
   { name: 'projects', label: 'projects' },
 ];
+
+const currentPath = Astro.url.pathname;
 ---
 
-<header style="max-width: var(--content-width); margin: 0 auto; padding: 2rem 1rem; display: flex; justify-content: space-between; align-items: center;">
-  <a href="/" style="font-size: 1.5rem; font-weight: 700; font-family: var(--font-heading); border: none;">
-    SHIRAN
-  </a>
-  <nav>
-    <ul style="display: flex; gap: 1.5rem; list-style: none; padding: 0; margin: 0;">
-      {sections.map(section => (
-        <li>
-          <a href={`/${section.name}`} style="font-size: 0.95rem; color: var(--text-muted);">
-            {section.label}
-          </a>
-        </li>
-      ))}
-    </ul>
+<header class="site-header">
+  <a href="/" class="site-wordmark">shiran</a>
+  <nav class="site-nav">
+    {sections.map(section => (
+      <a
+        href={`/${section.name}`}
+        class:list={[{ active: currentPath.startsWith(`/${section.name}`) }]}
+      >
+        {section.label}
+      </a>
+    ))}
+    <button class="theme-toggle" aria-label="Toggle theme" id="theme-toggle">
+      <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
   </nav>
 </header>
+
+<script>
+  const toggle = document.getElementById('theme-toggle');
+  const sunIcon = toggle?.querySelector('.sun-icon') as HTMLElement;
+  const moonIcon = toggle?.querySelector('.moon-icon') as HTMLElement;
+
+  function updateIcons() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (sunIcon && moonIcon) {
+      sunIcon.style.display = isDark ? 'none' : 'block';
+      moonIcon.style.display = isDark ? 'block' : 'none';
+    }
+  }
+
+  updateIcons();
+
+  toggle?.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const newTheme = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme === 'dark' ? 'dark' : '');
+    if (newTheme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem('theme', newTheme);
+    updateIcons();
+  });
+</script>

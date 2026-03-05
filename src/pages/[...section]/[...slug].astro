@@ -14,7 +14,7 @@ export async function getStaticPaths() {
           section,
           slug: entry.id,
         },
-        props: { entry },
+        props: { entry, section },
       }));
     })
   );
@@ -24,9 +24,10 @@ export async function getStaticPaths() {
 
 type Props = {
   entry: CollectionEntry<'blog'> | CollectionEntry<'notes'> | CollectionEntry<'projects'> | CollectionEntry<'guides'> | CollectionEntry<'til'>;
+  section: string;
 };
 
-const { entry } = Astro.props;
+const { entry, section } = Astro.props;
 const { Content } = await entry.render();
 ---
 
@@ -36,6 +37,7 @@ const { Content } = await entry.render();
   date={entry.data.date}
   tags={entry.data.tags}
   content={entry.body}
+  section={section}
 >
   <Content />
 </PostLayout>

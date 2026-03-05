@@ -2,53 +2,107 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import PostCard from '../components/PostCard.astro';
+import ScrollCard from '../components/ScrollCard.astro';
 import { getCollection } from 'astro:content';
 
 // Get all posts from all collections
-const allPosts = await Promise.all([
-  getCollection('blog'),
-  getCollection('notes'),
-  getCollection('projects'),
-  getCollection('guides'),
-  getCollection('til'),
-]).then(collections => {
-  return collections.flat().map((entry) => ({
-    ...entry,
-    section: entry.collection,
+const collections = ['blog', 'notes', 'projects', 'guides', 'til'] as const;
+
+const allCollections = await Promise.all(
+  collections.map(async (name) => {
+    const entries = await getCollection(name);
+    return { name, entries: entries.filter(e => !e.data.draft).sort((a, b) => b.data.date.getTime() - a.data.date.getTime()) };
+  })
+);
+
+// Flatten and sort for featured post
+const allPosts = allCollections
+  .flatMap(c => c.entries.map(e => ({ ...e, section: c.name })))
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const featured = allPosts[0];
+
+// Sections with content (for horizontal scroll rows)
+const activeSections = allCollections
+  .filter(c => c.entries.length > 0)
+  .map(c => ({
+    name: c.name,
+    label: c.name.charAt(0).toUpperCase() + c.name.slice(1),
+    posts: c.entries.slice(0, 8), // Show up to 8 per section
   }));
-});
 
-// Filter out drafts and sort by date
-const posts = allPosts
-  .filter(post => !post.data.draft)
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime())
-  .slice(0, 10); // Show 10 most recent
-
-// Calculate reading time
 function getReadingTime(content: string): number {
   const words = content.trim().split(/\s+/).length;
   return Math.ceil(words / 200);
 }
+
+const sectionLabels: Record<string, string> = {
+  blog: 'Blog',
+  notes: 'Notes',
+  projects: 'Projects',
+  guides: 'Guides',
+  til: 'Today I Learned',
+};
 ---
 
 <BaseLayout title="Home">
   <Header />
-  <main style="max-width: var(--content-width); margin: 0 auto; padding: 2rem 1rem;">
-    <div style="margin-bottom: 3rem;">
-      <hr style="margin-bottom: 2rem;" />
-      <h2 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 2rem;">Recent</h2>
+  <main>
+    <!-- Hero -->
+    <div class="page-container">
+      <div class="home-hero animate-in">
+        <p class="hero-intro">Personal site</p>
+        <h1>Writing about AI tooling, systems,<br/>and things I'm building.</h1>
+        <p class="hero-subtitle">
+          CS at Northeastern. Building developer tools, multi-agent systems, and writing about what I learn along the way.
+        </p>
+      </div>
     </div>
 
-    {posts.map(post => (
-      <PostCard
-        title={post.data.title}
-        date={post.data.date}
-        description={post.data.description}
-        section={post.section}
-        slug={post.id}
-        readingTime={getReadingTime(post.body)}
-      />
+    <!-- Featured post -->
+    {featured && (
+      <div class="page-container">
+        <div class="featured-post animate-in animate-in-delay-1">
+          <div class="featured-label">Latest</div>
+          <h2>
+            <a href={`/${featured.section}/${featured.id}`}>{featured.data.title}</a>
+          </h2>
+          <div class="featured-meta">
+            <time datetime={featured.data.date.toISOString()}>
+              {featured.data.date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+            </time>
+            <span class="dot">&middot;</span>
+            <span>{featured.section}</span>
+            <span class="dot">&middot;</span>
+            <span>{getReadingTime(featured.body)} min read</span>
+          </div>
+          {featured.data.description && (
+            <p class="featured-description">{featured.data.description}</p>
+          )}
+        </div>
+      </div>
+    )}
+
+    <!-- Horizontal scroll section rows -->
+    {activeSections.map((section, i) => (
+      <div class={`section-row animate-in animate-in-delay-${Math.min(i + 2, 4)}`}>
+        <div class="section-row-header">
+          <h2>{sectionLabels[section.name] || section.label}</h2>
+          <a href={`/${section.name}`}>View all &rarr;</a>
+        </div>
+        <div class="scroll-track">
+          {section.posts.map(post => (
+            <ScrollCard
+              title={post.data.title}
+              date={post.data.date}
+              description={post.data.description}
+              section={section.name}
+              slug={post.id}
+              readingTime={getReadingTime(post.body)}
+            />
+          ))}
+        </div>
+      </div>
     ))}
   </main>
   <Footer />

@@ -6,10 +6,8 @@ interface Props {
 const { tags } = Astro.props;
 ---
 
-<div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+<div class="tag-scroll">
   {tags.map(tag => (
-    <span style="font-size: 0.85rem; color: var(--text-muted); background: var(--bg-subtle); padding: 0.25rem 0.75rem; border-radius: 12px;">
-      {tag}
-    </span>
+    <span class="tag-pill">{tag}</span>
   ))}
 </div>
