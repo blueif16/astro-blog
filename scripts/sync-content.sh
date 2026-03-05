@@ -13,7 +13,7 @@ cd "$TEMP_DIR"
 git sparse-checkout set publish
 
 # Copy content into Astro's content directory
-if [ -n "$GITHUB_WORKSPACE" ]; then
+if [ -n "${GITHUB_WORKSPACE:-}" ]; then
   CONTENT_DIR="$GITHUB_WORKSPACE/src/content"
 else
   SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
