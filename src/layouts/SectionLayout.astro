@@ -6,15 +6,25 @@ import Footer from '../components/Footer.astro';
 interface Props {
   title: string;
   description?: string;
+  count?: number;
 }
 
-const { title, description } = Astro.props;
+const { title, description, count } = Astro.props;
 ---
 
 <BaseLayout title={title} description={description}>
   <Header />
-  <main style="max-width: var(--content-width); margin: 0 auto; padding: 2rem 1rem;">
-    <slot />
+  <main class="page-container">
+    <div class="section-hero animate-in">
+      <h1>{title}</h1>
+      {count !== undefined && (
+        <p class="section-count">{count} {count === 1 ? 'post' : 'posts'}</p>
+      )}
+    </div>
+    <hr class="section-divider animate-in animate-in-delay-1" />
+    <div class="animate-in animate-in-delay-2">
+      <slot />
+    </div>
   </main>
   <Footer />
 </BaseLayout>

@@ -1,0 +1,30 @@
+---
+interface Props {
+  title: string;
+  date: Date;
+  description?: string;
+  section: string;
+  slug: string;
+  readingTime: number;
+}
+
+const { title, date, description, section, slug, readingTime } = Astro.props;
+---
+
+<div class="scroll-card">
+  <div>
+    <h3>
+      <a href={`/${section}/${slug}`}>{title}</a>
+    </h3>
+    {description && (
+      <p class="card-description">{description}</p>
+    )}
+  </div>
+  <div class="card-meta">
+    <time datetime={date.toISOString()}>
+      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+    </time>
+    <span class="dot">&middot;</span>
+    <span>{readingTime} min</span>
+  </div>
+</div>

@@ -1,12 +1,13 @@
 ---
+const year = new Date().getFullYear();
 ---
 
-<footer style="max-width: var(--content-width); margin: 0 auto; padding: 2rem 1rem; margin-top: 4rem; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--text-muted);">
-  <div style="display: flex; gap: 1rem; justify-content: center;">
-    <span>Shiran</span>
-    <span>·</span>
-    <span>Northeastern</span>
-    <span>·</span>
-    <a href="https://github.com/blueif16" target="_blank" rel="noopener noreferrer">GitHub</a>
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>&copy; {year} Shiran</span>
+    <div class="footer-links">
+      <a href="https://github.com/blueif16" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="/rss.xml">RSS</a>
+    </div>
   </div>
 </footer>
