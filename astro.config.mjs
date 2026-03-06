@@ -5,11 +5,14 @@ import rehypePrettyCode from 'rehype-pretty-code';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 
+import react from '@astrojs/react';
+
 // https://astro.build/config
 export default defineConfig({
   site: 'https://yourdomain.com',
   output: 'static',
   adapter: vercel(),
+
   markdown: {
     remarkPlugins: [
       remarkObsidianCallout,
@@ -23,4 +26,6 @@ export default defineConfig({
       rehypeKatex,
     ],
   },
+
+  integrations: [react()],
 });

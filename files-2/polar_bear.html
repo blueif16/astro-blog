@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D SVG Mascot — MetaMask-Style Renderer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #e8e6e2;
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    color: #3a3a38;
+    overflow: hidden;
+  }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  svg#scene {
+    width: 480px;
+    height: 480px;
+    background: #f5f4f0;
+    border-radius: 16px;
+    filter: drop-shadow(0 8px 32px rgba(0,0,0,0.12));
+    cursor: crosshair;
+  }
+
+  .label {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    opacity: 0.45;
+    user-select: none;
+  }
+
+  .stats {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    font-size: 11px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    opacity: 0.3;
+    text-align: right;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <svg id="scene" viewBox="0 0 480 480" xmlns="http://www.w3.org/2000/svg"></svg>
+  <div class="label">move your mouse</div>
+</div>
+<div class="stats" id="stats"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════════
+// MODEL DATA
+// ═══════════════════════════════════════════════════════════════════════════════
+// Replace this entire MODEL_DATA object with output from convert-glb.js
+// e.g.:  const MODEL_DATA = <paste your hedgehog.json here>;
+
+const MODEL_DATA = generateDemoModel();
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PROCEDURAL DEMO MODEL (delete this function once you have real model data)
+// ═══════════════════════════════════════════════════════════════════════════════
+function generateDemoModel() {
+  // Build an icosphere (subdivision 2) with color variation for visual interest
+  const t = (1 + Math.sqrt(5)) / 2; // golden ratio
+
+  // Icosahedron base vertices
+  let verts = [
+    [-1, t, 0], [1, t, 0], [-1, -t, 0], [1, -t, 0],
+    [0, -1, t], [0, 1, t], [0, -1, -t], [0, 1, -t],
+    [t, 0, -1], [t, 0, 1], [-t, 0, -1], [-t, 0, 1],
+  ];
+
+  // Normalize to unit sphere
+  verts = verts.map(v => {
+    const len = Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+    return [v[0]/len, v[1]/len, v[2]/len];
+  });
+
+  // Icosahedron faces
+  let faces = [
+    [0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],
+    [1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],
+    [3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],
+    [4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1],
+  ];
+
+  // Subdivide twice for ~320 faces
+  const midpointCache = {};
+  function getMidpoint(i0, i1) {
+    const key = Math.min(i0,i1) + '_' + Math.max(i0,i1);
+    if (midpointCache[key] !== undefined) return midpointCache[key];
+    const a = verts[i0], b = verts[i1];
+    const mid = [(a[0]+b[0])/2, (a[1]+b[1])/2, (a[2]+b[2])/2];
+    const len = Math.sqrt(mid[0]*mid[0] + mid[1]*mid[1] + mid[2]*mid[2]);
+    verts.push([mid[0]/len, mid[1]/len, mid[2]/len]);
+    midpointCache[key] = verts.length - 1;
+    return verts.length - 1;
+  }
+
+  for (let sub = 0; sub < 2; sub++) {
+    const newFaces = [];
+    for (const [a, b, c] of faces) {
+      const ab = getMidpoint(a, b);
+      const bc = getMidpoint(b, c);
+      const ca = getMidpoint(c, a);
+      newFaces.push([a, ab, ca], [b, bc, ab], [c, ca, bc], [ab, bc, ca]);
+    }
+    faces = newFaces;
+    // Reset cache for next subdivision
+    Object.keys(midpointCache).forEach(k => delete midpointCache[k]);
+  }
+
+  // Scale to ~40 units radius
+  const S = 40;
+  const positions = verts.map(v => [
+    +(v[0] * S).toFixed(3),
+    +(v[1] * S).toFixed(3),
+    +(v[2] * S).toFixed(3)
+  ]);
+
+  // Color faces based on Y-position (latitude) for visual interest
+  // Top = warm highlight, middle = body, bottom = shadow
+  const facesWithColor = faces.map(([a, b, c]) => {
+    const avgY = (positions[a][1] + positions[b][1] + positions[c][1]) / 3;
+    const avgZ = (positions[a][2] + positions[b][2] + positions[c][2]) / 3;
+    const norm = avgY / S; // -1 to 1
+
+    let color;
+    if (norm > 0.5) {
+      // Top highlight
+      color = [250, 250, 248];
+    } else if (norm > 0.1) {
+      // Upper body
+      color = [240, 237, 232];
+    } else if (norm > -0.3) {
+      // Mid body — slight warm tint on front
+      if (avgZ > 0) {
+        color = [235, 228, 218];
+      } else {
+        color = [230, 225, 220];
+      }
+    } else if (norm > -0.6) {
+      // Lower shadow
+      color = [216, 212, 206];
+    } else {
+      // Bottom deep shadow
+      color = [195, 190, 184];
+    }
+
+    // Add a few dark "feature" faces near the front for visual interest (eyes/nose)
+    if (avgZ > 30 && Math.abs(avgY - 8) < 6 && Math.abs(positions[a][0]) > 8 && Math.abs(positions[a][0]) < 20) {
+      color = [42, 42, 42]; // "eyes"
+    }
+    if (avgZ > 35 && avgY > -5 && avgY < 5 && Math.abs(positions[a][0]) < 8) {
+      color = [30, 30, 30]; // "nose"
+    }
+
+    return { face: [a, b, c], color };
+  });
+
+  // Group by color
+  const chunkMap = new Map();
+  for (const { face, color } of facesWithColor) {
+    const key = color.join(',');
+    if (!chunkMap.has(key)) chunkMap.set(key, { color, faces: [] });
+    chunkMap.get(key).faces.push(face);
+  }
+
+  return {
+    positions,
+    chunks: Array.from(chunkMap.values()),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MATH UTILITIES — all column-major 4×4, inlined for performance
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function mat4_perspective(out, fovy, aspect, near, far) {
+  const f = 1.0 / Math.tan(fovy / 2);
+  const nf = 1 / (near - far);
+  out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
+  out[4] = 0; out[5] = f; out[6] = 0; out[7] = 0;
+  out[8] = 0; out[9] = 0; out[10] = (far + near) * nf; out[11] = -1;
+  out[12] = 0; out[13] = 0; out[14] = 2 * far * near * nf; out[15] = 0;
+  return out;
+}
+
+function mat4_lookAt(out, eye, center, up) {
+  let x0, x1, x2, y0, y1, y2, z0, z1, z2, len;
+  const eyex = eye[0], eyey = eye[1], eyez = eye[2];
+  const cx = center[0], cy = center[1], cz = center[2];
+  const upx = up[0], upy = up[1], upz = up[2];
+
+  z0 = eyex - cx; z1 = eyey - cy; z2 = eyez - cz;
+  len = 1 / (Math.sqrt(z0*z0 + z1*z1 + z2*z2) || 1);
+  z0 *= len; z1 *= len; z2 *= len;
+
+  x0 = upy*z2 - upz*z1;
+  x1 = upz*z0 - upx*z2;
+  x2 = upx*z1 - upy*z0;
+  len = Math.sqrt(x0*x0 + x1*x1 + x2*x2);
+  if (len) { len = 1/len; x0 *= len; x1 *= len; x2 *= len; }
+
+  y0 = z1*x2 - z2*x1;
+  y1 = z2*x0 - z0*x2;
+  y2 = z0*x1 - z1*x0;
+  len = Math.sqrt(y0*y0 + y1*y1 + y2*y2);
+  if (len) { len = 1/len; y0 *= len; y1 *= len; y2 *= len; }
+
+  out[0]=x0; out[1]=y0; out[2]=z0; out[3]=0;
+  out[4]=x1; out[5]=y1; out[6]=z1; out[7]=0;
+  out[8]=x2; out[9]=y2; out[10]=z2; out[11]=0;
+  out[12]=-(x0*eyex+x1*eyey+x2*eyez);
+  out[13]=-(y0*eyex+y1*eyey+y2*eyez);
+  out[14]=-(z0*eyex+z1*eyey+z2*eyez);
+  out[15]=1;
+  return out;
+}
+
+function mat4_multiply(out, a, b) {
+  const a00=a[0],a01=a[1],a02=a[2],a03=a[3],
+        a10=a[4],a11=a[5],a12=a[6],a13=a[7],
+        a20=a[8],a21=a[9],a22=a[10],a23=a[11],
+        a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+  let b0,b1,b2,b3;
+  b0=b[0];b1=b[1];b2=b[2];b3=b[3];
+  out[0]=b0*a00+b1*a10+b2*a20+b3*a30;
+  out[1]=b0*a01+b1*a11+b2*a21+b3*a31;
+  out[2]=b0*a02+b1*a12+b2*a22+b3*a32;
+  out[3]=b0*a03+b1*a13+b2*a23+b3*a33;
+  b0=b[4];b1=b[5];b2=b[6];b3=b[7];
+  out[4]=b0*a00+b1*a10+b2*a20+b3*a30;
+  out[5]=b0*a01+b1*a11+b2*a21+b3*a31;
+  out[6]=b0*a02+b1*a12+b2*a22+b3*a32;
+  out[7]=b0*a03+b1*a13+b2*a23+b3*a33;
+  b0=b[8];b1=b[9];b2=b[10];b3=b[11];
+  out[8]=b0*a00+b1*a10+b2*a20+b3*a30;
+  out[9]=b0*a01+b1*a11+b2*a21+b3*a31;
+  out[10]=b0*a02+b1*a12+b2*a22+b3*a32;
+  out[11]=b0*a03+b1*a13+b2*a23+b3*a33;
+  b0=b[12];b1=b[13];b2=b[14];b3=b[15];
+  out[12]=b0*a00+b1*a10+b2*a20+b3*a30;
+  out[13]=b0*a01+b1*a11+b2*a21+b3*a31;
+  out[14]=b0*a02+b1*a12+b2*a22+b3*a32;
+  out[15]=b0*a03+b1*a13+b2*a23+b3*a33;
+  return out;
+}
+
+function mat4_invert(out, a) {
+  const a00=a[0],a01=a[1],a02=a[2],a03=a[3],
+        a10=a[4],a11=a[5],a12=a[6],a13=a[7],
+        a20=a[8],a21=a[9],a22=a[10],a23=a[11],
+        a30=a[12],a31=a[13],a32=a[14],a33=a[15];
+  const b00=a00*a11-a01*a10, b01=a00*a12-a02*a10,
+        b02=a00*a13-a03*a10, b03=a01*a12-a02*a11,
+        b04=a01*a13-a03*a11, b05=a02*a13-a03*a12,
+        b06=a20*a31-a21*a30, b07=a20*a32-a22*a30,
+        b08=a20*a33-a23*a30, b09=a21*a32-a22*a31,
+        b10=a21*a33-a23*a31, b11=a22*a33-a23*a32;
+  let det = b00*b11-b01*b10+b02*b09+b03*b08-b04*b07+b05*b06;
+  if (!det) return null;
+  det = 1.0/det;
+  out[0]=(a11*b11-a12*b10+a13*b09)*det;
+  out[1]=(a02*b10-a01*b11-a03*b09)*det;
+  out[2]=(a31*b05-a32*b04+a33*b03)*det;
+  out[3]=(a22*b04-a21*b05-a23*b03)*det;
+  out[4]=(a12*b08-a10*b11-a13*b07)*det;
+  out[5]=(a00*b11-a02*b08+a03*b07)*det;
+  out[6]=(a32*b02-a30*b05-a33*b01)*det;
+  out[7]=(a20*b05-a22*b02+a23*b01)*det;
+  out[8]=(a10*b10-a11*b08+a13*b06)*det;
+  out[9]=(a01*b08-a00*b10-a03*b06)*det;
+  out[10]=(a30*b04-a31*b02+a33*b00)*det;
+  out[11]=(a21*b02-a20*b04-a23*b00)*det;
+  out[12]=(a11*b07-a10*b09-a12*b06)*det;
+  out[13]=(a00*b09-a01*b07+a02*b06)*det;
+  out[14]=(a31*b01-a30*b03-a32*b00)*det;
+  out[15]=(a20*b03-a21*b01+a22*b00)*det;
+  return out;
+}
+
+function vec3_transformMat4(out, a, m) {
+  const x=a[0],y=a[1],z=a[2];
+  let w = m[3]*x + m[7]*y + m[11]*z + m[15];
+  w = w || 1.0;
+  out[0] = (m[0]*x + m[4]*y + m[8]*z + m[12]) / w;
+  out[1] = (m[1]*x + m[5]*y + m[9]*z + m[13]) / w;
+  out[2] = (m[2]*x + m[6]*y + m[10]*z + m[14]) / w;
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MODEL LOADER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const CAMERA_DISTANCE = 400;
+
+function loadModel(modelJson) {
+  const vertCount = modelJson.positions.length;
+  const positions = new Float32Array(3 * vertCount);
+  const transformed = new Float32Array(3 * vertCount);
+
+  // Flatten positions into typed array
+  let ptr = 0;
+  for (let i = 0; i < vertCount; i++) {
+    const p = modelJson.positions[i];
+    positions[ptr++] = p[0];
+    positions[ptr++] = p[1];
+    positions[ptr++] = p[2];
+  }
+
+  // Create SVG polygons grouped by chunk
+  const polygons = [];
+  for (const chunk of modelJson.chunks) {
+    const fillColor = `rgb(${chunk.color[0]},${chunk.color[1]},${chunk.color[2]})`;
+    for (const face of chunk.faces) {
+      const svgPoly = document.createElementNS(SVG_NS, 'polygon');
+      svgPoly.setAttribute('fill', fillColor);
+      svgPoly.setAttribute('stroke', fillColor);
+      svgPoly.setAttribute('stroke-width', '0.5');  // prevent hairline gaps
+      svgPoly.setAttribute('points', '0,0 10,0 0,10');
+      polygons.push({
+        svg: svgPoly,
+        indices: face,
+        zIndex: 0,
+      });
+    }
+  }
+
+  return { positions, transformed, polygons, vertCount };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MATRIX COMPUTER — builds projection × view × model each frame
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function createMatrixComputer(distance) {
+  const objectCenter = new Float32Array(3);
+  const up = new Float32Array([0, 1, 0]);
+  const projection = new Float32Array(16);
+  const model = new Float32Array(16);
+  const view = mat4_lookAt(
+    new Float32Array(16),
+    new Float32Array([0, 0, distance]),
+    objectCenter,
+    up
+  );
+  const invView = mat4_invert(new Float32Array(16), view);
+  const invProjection = new Float32Array(16);
+  const target = new Float32Array(3);
+  const result = new Float32Array(16);
+
+  const FOVY = Math.PI / 4;
+  const NEAR = 100;
+  const FAR  = 1000;
+
+  return function computeMatrix(rect, lookPos) {
+    const aspect = rect.width / rect.height;
+    mat4_perspective(projection, FOVY, aspect, NEAR, FAR);
+    mat4_invert(invProjection, projection);
+
+    // Unproject mouse position to 3D target
+    target[0] = lookPos[0];
+    target[1] = lookPos[1];
+    target[2] = 1.2;
+    vec3_transformMat4(target, target, invProjection);
+    vec3_transformMat4(target, target, invView);
+
+    // Model matrix: object looks at target
+    mat4_lookAt(model, objectCenter, target, up);
+
+    // Final: projection × view × model
+    mat4_multiply(result, projection, view);
+    mat4_multiply(result, result, model);
+    return result;
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// POSITION UPDATER — inline 4×4 × vec3 multiply with perspective divide
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function createPositionUpdater(positions, transformed, vertCount) {
+  return function updatePositions(M) {
+    // Extract matrix elements once (column-major)
+    const m00=M[0],m01=M[1],m02=M[2],m03=M[3],
+          m10=M[4],m11=M[5],m12=M[6],m13=M[7],
+          m20=M[8],m21=M[9],m22=M[10],m23=M[11],
+          m30=M[12],m31=M[13],m32=M[14],m33=M[15];
+
+    for (let i = 0; i < vertCount; i++) {
+      const x = positions[3*i];
+      const y = positions[3*i + 1];
+      const z = positions[3*i + 2];
+
+      // Perspective divide: clip_xyz / w
+      const tw = x*m03 + y*m13 + z*m23 + m33;
+      transformed[3*i]     = (x*m00 + y*m10 + z*m20 + m30) / tw;
+      transformed[3*i + 1] = (x*m01 + y*m11 + z*m21 + m31) / tw;
+      transformed[3*i + 2] = (x*m02 + y*m12 + z*m22 + m32) / tw;
+    }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FACE UPDATER — backface cull, screen projection, depth sort, DOM reorder
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function createFaceUpdater(container, polygons, transformed) {
+  const toDraw = [];
+
+  return function updateFaces(rect) {
+    const w = rect.width;
+    const h = rect.height;
+    toDraw.length = 0;
+
+    for (let i = 0; i < polygons.length; i++) {
+      const poly = polygons[i];
+      const idx = poly.indices;
+      const i0 = idx[0], i1 = idx[1], i2 = idx[2];
+
+      const ax = transformed[3*i0],     ay = transformed[3*i0 + 1];
+      const bx = transformed[3*i1],     by = transformed[3*i1 + 1];
+      const cx = transformed[3*i2],     cy = transformed[3*i2 + 1];
+
+      // Backface cull: cross-product determinant in screen space
+      // If det < 0, face is back-facing → skip
+      // Flip sign if model appears inside-out
+      const det = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+      if (det < 0) continue;
+
+      // Map clip-space [-1,1] → SVG screen coordinates
+      let points = '';
+      let zmax = -Infinity, zmin = Infinity;
+
+      for (let j = 0; j < 3; j++) {
+        const vi = idx[j];
+        const sx = 0.5 * w * (1.0 - transformed[3*vi]);
+        const sy = 0.5 * h * (1.0 - transformed[3*vi + 1]);
+        const z  = transformed[3*vi + 2];
+        if (j > 0) points += ' ';
+        points += sx + ',' + sy;
+        if (z > zmax) zmax = z;
+        if (z < zmin) zmin = z;
+      }
+
+      // Depth index for painter's algorithm
+      poly.zIndex = zmax + 0.25 * zmin;
+
+      if (points.indexOf('NaN') === -1) {
+        poly.svg.setAttribute('points', points);
+      }
+      toDraw.push(poly);
+    }
+
+    // Sort back-to-front (highest zIndex = furthest = draw first)
+    toDraw.sort((a, b) => b.zIndex - a.zIndex);
+
+    // Reorder SVG DOM children for correct overlap
+    // Using replaceChildren for a single reflow
+    const children = toDraw.map(p => p.svg);
+    if (container.replaceChildren) {
+      container.replaceChildren(...children);
+    } else {
+      while (container.lastChild) container.removeChild(container.lastChild);
+      for (const child of children) container.appendChild(child);
+    }
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOGO VIEWER — mouse tracking with smooth lerp interpolation
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function createLogoViewer(container, renderScene) {
+  const mouse = { x: 0, y: 0 };
+  const lookCurrent = [0, 0];
+  const LOOK_RATE = 0.3;
+  let animating = true;
+  let frameCount = 0;
+  const statsEl = document.getElementById('stats');
+
+  function updateLookCurrent() {
+    const li = 1.0 - LOOK_RATE;
+    lookCurrent[0] = li * lookCurrent[0] + LOOK_RATE * mouse.x;
+    lookCurrent[1] = li * lookCurrent[1] + LOOK_RATE * mouse.y + 0.085;
+  }
+
+  function render() {
+    updateLookCurrent();
+    renderScene(lookCurrent);
+    frameCount++;
+  }
+
+  // Mouse tracking
+  window.addEventListener('mousemove', function(ev) {
+    if (!animating) animating = true;
+    const bounds = container.getBoundingClientRect();
+    mouse.x = 1.0 - (2.0 * (ev.clientX - bounds.left)) / bounds.width;
+    mouse.y = 1.0 - (2.0 * (ev.clientY - bounds.top)) / bounds.height;
+  });
+
+  // Touch support
+  window.addEventListener('touchmove', function(ev) {
+    if (ev.touches.length > 0) {
+      const touch = ev.touches[0];
+      const bounds = container.getBoundingClientRect();
+      mouse.x = 1.0 - (2.0 * (touch.clientX - bounds.left)) / bounds.width;
+      mouse.y = 1.0 - (2.0 * (touch.clientY - bounds.top)) / bounds.height;
+    }
+  }, { passive: true });
+
+  // Device orientation (mobile tilt)
+  window.addEventListener('deviceorientation', function(ev) {
+    if (!animating) animating = true;
+    const leftToRight = ev.gamma || 0;
+    const frontToBack = ev.beta || 0;
+    const bounds = container.getBoundingClientRect();
+    const xOffset = 200, yOffset = -300, accel = 10;
+    mouse.x = 1.0 - (2.0 * (xOffset + leftToRight * accel - bounds.left)) / bounds.width;
+    mouse.y = 1.0 - (2.0 * (yOffset + frontToBack * accel - bounds.top)) / bounds.height;
+  });
+
+  // Stats display
+  let lastTime = performance.now();
+  let lastFrameCount = 0;
+
+  // Continuous animation loop (not lazy — gives smoother lerp)
+  function loop() {
+    requestAnimationFrame(loop);
+    render();
+
+    // Update FPS counter every second
+    const now = performance.now();
+    if (now - lastTime >= 1000) {
+      const fps = ((frameCount - lastFrameCount) / ((now - lastTime) / 1000)).toFixed(0);
+      statsEl.textContent = `${fps} fps · ${visibleCount} visible`;
+      lastTime = now;
+      lastFrameCount = frameCount;
+    }
+  }
+
+  // Initial render then start loop
+  render();
+  loop();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+let visibleCount = 0;
+
+(function init() {
+  const svg = document.getElementById('scene');
+  const rect = { width: 480, height: 480 };
+
+  // Load model
+  const model = loadModel(MODEL_DATA);
+  const { positions, transformed, polygons, vertCount } = model;
+
+  // Add all polygons to SVG
+  for (const poly of polygons) {
+    svg.appendChild(poly.svg);
+  }
+
+  console.log(`Loaded: ${vertCount} vertices, ${polygons.length} polygons, ${MODEL_DATA.chunks.length} color chunks`);
+
+  // Create pipeline stages
+  const computeMatrix = createMatrixComputer(CAMERA_DISTANCE);
+  const updatePositions = createPositionUpdater(positions, transformed, vertCount);
+  const updateFaces = createFaceUpdater(svg, polygons, transformed);
+
+  // Render function called each frame
+  function renderScene(lookPos) {
+    const matrix = computeMatrix(rect, lookPos);
+    updatePositions(matrix);
+    updateFaces(rect);
+    visibleCount = svg.childElementCount;
+  }
+
+  // Start viewer with mouse tracking
+  createLogoViewer(svg, renderScene);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "@metamask/layout-components",
+  "version": "1.0.0",
+  "description": "Layout components and theme system extracted from MetaMask website",
+  "type": "module",
+  "main": "theme.js",
+  "exports": {
+    "./theme": "./theme.js",
+    "./PageShell": "./PageShell.jsx",
+    "./SectionWrapper": "./SectionWrapper.jsx",
+    "./Primitives": "./Primitives.jsx",
+    "./smooth-scroll": "./smooth-scroll.js"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "styled-components": "^5.3.9"
+  },
+  "dependencies": {
+    "@studio-freight/lenis": "^1.0.16",
+    "@studio-freight/hamo": "^0.6.18"
+  },
+  "devDependencies": {
+    "prop-types": "^15.8.1"
+  },
+  "keywords": [
+    "metamask",
+    "layout",
+    "theme",
+    "styled-components",
+    "smooth-scroll",
+    "lenis",
+    "astro"
+  ],
+  "author": "MetaMask",
+  "license": "MIT"
+}
