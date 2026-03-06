@@ -33,7 +33,6 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react'
-import ScrollAnimation from 'react-animate-on-scroll'
 import styled from 'styled-components'
 
 const AnimatedCarousel = ({
@@ -128,24 +127,12 @@ const AnimatedCarousel = ({
       <ContentWrapper className={`${customClass} ${featureSliderItems[activeItem]?.customClass || ''}`}>
         <FeatureSliderWrapper className={layoutType ? `layout-${layoutType}` : ''}>
           <FeatureSliderInner>
-            <ScrollAnimation
-              animateIn={animation ? 'fadeInLeftMini' : ''}
-              animateOnce
-              initiallyVisible
-              delay={0}
-              offset={0}
-            >
+            <div className={animation ? 'fadeInLeftMini' : ''}>
               {innerContent}
-            </ScrollAnimation>
+            </div>
           </FeatureSliderInner>
           <SliderImage className="hidden-mobile">
-            <ScrollAnimation
-              animateIn={animation ? 'fadeInRightMini' : ''}
-              initiallyVisible
-              animateOnce
-              delay={0}
-              offset={0}
-            >
+            <div className={animation ? 'fadeInRightMini' : ''}>
               {featureSliderItems.map((item, index) => (
                 <SliderImageItem
                   className={`fadeIn ${activeItem === index ? 'active' : ''}`}
@@ -154,7 +141,7 @@ const AnimatedCarousel = ({
                   {imageContent(item.image, item.imageMobile)}
                 </SliderImageItem>
               ))}
-            </ScrollAnimation>
+            </div>
           </SliderImage>
         </FeatureSliderWrapper>
         {(cta || ctaSecond) && (
