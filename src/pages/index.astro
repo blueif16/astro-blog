@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { ThemeProvider } from 'styled-components';
-import { defaultTheme } from '../components/metamask/layout/theme.js';
+import StyledComponentsWrapper from '../components/StyledComponentsWrapper.jsx';
 
 // Import MetaMask components
 import SiteHeader from '../components/metamask/navigation/SiteHeader.jsx';
@@ -93,10 +92,10 @@ const carouselItems = CONTENT.projects.map(project => ({
 ---
 
 <BaseLayout title="Home">
-  <ThemeProvider theme={defaultTheme} client:load>
+  <StyledComponentsWrapper client:only="react">
     <!-- Site Header -->
     <SiteHeader
-      client:load
+      client:only="react"
       logo={{ logo: "/logo.svg" }}
       menus={headerMenus}
       isSticky={true}
@@ -105,7 +104,7 @@ const carouselItems = CONTENT.projects.map(project => ({
 
     <!-- Hero Section -->
     <AnimatedFeatureSection
-      client:load
+      client:only="react"
       headline={`<h1>${CONTENT.name}</h1>`}
       description={`<p style="font-size: 24px; line-height: 1.5; margin-bottom: 8px;">${CONTENT.title}</p><p style="font-size: 18px; color: #6A737D;">${CONTENT.subtitle}</p>`}
       contentAlignment="center"
@@ -116,7 +115,7 @@ const carouselItems = CONTENT.projects.map(project => ({
 
     <!-- What I Do Section -->
     <AnimatedFeatureSection
-      client:load
+      client:only="react"
       headline={`<h2>${CONTENT.whatIDo.title}</h2>`}
       description={`<p style="font-size: 18px; line-height: 1.6;">${CONTENT.whatIDo.description}</p>`}
       contentAlignment="left"
@@ -127,7 +126,7 @@ const carouselItems = CONTENT.projects.map(project => ({
 
     <!-- Projects Carousel -->
     <AnimatedCarousel
-      client:load
+      client:only="react"
       headline="<h2>Projects</h2>"
       description="<p>Building tools for the AI-native development workflow.</p>"
       featureSliderItems={carouselItems}
@@ -137,7 +136,7 @@ const carouselItems = CONTENT.projects.map(project => ({
 
     <!-- How I Work Section -->
     <AnimatedFeatureSection
-      client:load
+      client:only="react"
       headline={`<h2>${CONTENT.stack.title}</h2>`}
       description={`<p style="font-size: 18px; line-height: 1.6;">${CONTENT.stack.description}</p>`}
       contentAlignment="right"
@@ -148,7 +147,7 @@ const carouselItems = CONTENT.projects.map(project => ({
 
     <!-- CTA Banner -->
     <FullWidthBanner
-      client:load
+      client:only="react"
       headline={CONTENT.cta.title}
       description={CONTENT.cta.description}
       ctas={[
@@ -159,11 +158,11 @@ const carouselItems = CONTENT.projects.map(project => ({
 
     <!-- Site Footer -->
     <SiteFooter
-      client:load
+      client:only="react"
       menus={footerMenus}
       copyright="© 2026 Shiran. Built with Astro."
     />
-  </ThemeProvider>
+  </StyledComponentsWrapper>
 
   <!-- Lenis Smooth Scroll -->
   <script>

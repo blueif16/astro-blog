@@ -13,14 +13,17 @@
     "@astrojs/rss": "^4.0.15",
     "@astrojs/vercel": "^9.0.4",
     "@metamask/logo": "^3.1.2",
+    "@studio-freight/hamo": "^0.6.33",
     "@studio-freight/lenis": "^1.0.42",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "astro": "^5.17.1",
     "framer-motion": "^12.35.0",
     "gsap": "^3.12.5",
+    "prop-types": "^15.8.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "react-responsive": "^10.0.1",
     "react-slick": "^0.30.2",
     "reading-time": "^1.5.0",
     "rehype-katex": "^7.0.1",
@@ -30,6 +33,7 @@
     "shiki": "^4.0.1",
     "slick-carousel": "^1.8.1",
     "styled-components": "^6.1.13",
-    "three": "^0.170.0"
+    "three": "^0.170.0",
+    "tslib": "^2.8.1"
   }
 }
