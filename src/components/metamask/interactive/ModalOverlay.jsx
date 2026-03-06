@@ -5,7 +5,6 @@ import PropTypes from 'prop-types'
 /**
  * ModalOverlay - Modal popup with body scroll lock and backdrop
  *
- * Extracted from MetaMask website Popup.js and PopupAnnouncement.js components.
  * Features body scroll lock, backdrop click to close, and customizable content.
  *
  * @param {Object} props
@@ -196,7 +195,6 @@ const CloseIcon = () => (
 /**
  * AnnouncementBanner - Dismissible announcement banner component
  *
- * Extracted from MetaMask website PopupAnnouncement.js component.
  * Features dismissible banner with CTA and close button.
  *
  * @param {Object} props

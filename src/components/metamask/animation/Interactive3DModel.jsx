@@ -1,8 +1,8 @@
 /**
- * Interactive3DModel - 3D MetaMask fox logo with responsive sizing
+ * Interactive3DModel - 3D logo with responsive sizing
  *
  * @component
- * @description Renders an interactive 3D MetaMask fox logo using WebGL.
+ * @description Renders an interactive 3D logo using WebGL.
  * Automatically adjusts size and camera distance based on viewport width.
  *
  * @prop {number} [left] - Left position offset (auto-calculated based on viewport)

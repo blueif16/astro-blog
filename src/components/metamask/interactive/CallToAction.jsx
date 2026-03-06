@@ -6,7 +6,6 @@ import { gsap } from 'gsap'
 /**
  * CallToAction - CTA block with layout variants and hover animations
  *
- * Extracted from MetaMask website CTA.js component.
  * Features GSAP-based smooth scroll animations and multiple layout variants.
  *
  * @param {Object} props

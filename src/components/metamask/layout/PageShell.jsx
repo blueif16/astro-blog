@@ -2,7 +2,6 @@
  * PageShell Component
  *
  * Root layout component with ThemeProvider and global styles.
- * Extracted from MetaMask layout.js
  *
  * Usage in Astro:
  * 1. Import in your layout component

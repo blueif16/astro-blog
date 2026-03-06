@@ -5,7 +5,6 @@ import PropTypes from 'prop-types'
 /**
  * FullWidthBanner - Edge-to-edge CTA banner with background image support
  *
- * Extracted from MetaMask website FullWidthCta.js component.
  * Features full-width backgrounds, centered content, and flexible CTA layouts.
  *
  * @param {Object} props

@@ -2,7 +2,6 @@
  * Styled Primitives
  *
  * Shared styled-components primitives for consistent UI elements.
- * Extracted from MetaMask StyledGeneral.js
  *
  * Components:
  * - Section: Main section container with responsive padding

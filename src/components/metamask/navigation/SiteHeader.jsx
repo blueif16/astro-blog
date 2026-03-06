@@ -7,7 +7,6 @@ import PropTypes from 'prop-types'
 /**
  * SiteHeader - Responsive header with mobile menu and scroll-aware visibility
  *
- * Extracted from MetaMask website Header.js
  * Adapted for Astro routing with prop-driven links
  */
 const SiteHeader = props => {

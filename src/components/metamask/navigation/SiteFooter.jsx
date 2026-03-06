@@ -5,7 +5,6 @@ import styled from 'styled-components'
 /**
  * SiteFooter - Footer with link columns
  *
- * Extracted from MetaMask website Footer.js
  * Adapted for Astro routing with prop-driven links
  */
 const SiteFooter = props => {

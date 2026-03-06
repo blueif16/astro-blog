@@ -5,7 +5,6 @@ import PropTypes from 'prop-types'
 /**
  * AnimatedButton - Interactive button with hover/click animation states
  *
- * Extracted from MetaMask website Button.js component.
  * Features smooth color transitions and optional icon support.
  *
  * @param {Object} props

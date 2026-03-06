@@ -2,7 +2,6 @@
  * SectionWrapper Component
  *
  * Responsive section container with configurable padding and max-width.
- * Extracted from MetaMask ContentWrapper.js
  *
  * Usage:
  * <SectionWrapper size="wide" customClass="my-section">

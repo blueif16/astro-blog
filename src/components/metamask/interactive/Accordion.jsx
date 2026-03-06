@@ -5,7 +5,6 @@ import PropTypes from 'prop-types'
 /**
  * Accordion - Expandable FAQ component with smooth open/close animation
  *
- * Extracted from MetaMask website Faq.js component.
  * Features smooth height transitions using CSS and rotate animation on icon.
  *
  * @param {Object} props
