@@ -520,6 +520,129 @@ const sections = [
     border-radius: 1px;
     opacity: 0;
   }
+
+  /* ══════════════════════════════════════════════════════════════════════════
+     Mobile / Responsive
+     ══════════════════════════════════════════════════════════════════════════ */
+
+  /* Hide custom cursor on touch devices */
+  @media (pointer: coarse) {
+    body { cursor: auto !important; }
+    .custom-cursor { display: none !important; }
+  }
+
+  @media (max-width: 768px) {
+    /* ── Hero ── */
+    .hero { height: auto; min-height: 100svh; padding-bottom: 200px; }
+    .hero-top { padding-top: 10vh; }
+    .hero-title { font-size: clamp(1.6rem, 7vw, 2.4rem); }
+    .hero-quote { bottom: 200px; max-width: 300px; padding: 0 20px; }
+    .hero-quote blockquote { font-size: 1.05rem; }
+
+    .vocab-blob { display: none; }
+
+    /* ── Hedgehog — fixed small at bottom-right ── */
+    .hedgehog-wrapper {
+      bottom: 16px !important;
+      right: 16px !important;
+      left: auto !important;
+      transform: none !important;
+      top: auto !important;
+      z-index: 50;
+    }
+
+    #hedgehog-canvas {
+      width: 140px; height: 140px;
+    }
+
+    .hedge-hover-label { display: none; }
+
+    /* ── Stack section — single column ── */
+    .intro-section { height: auto; min-height: 100vh; }
+    .intro-sticky {
+      position: relative;
+      height: auto;
+      min-height: 100vh;
+      padding: 60px 20px 40px;
+    }
+
+    .intro-grid {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto;
+      max-width: 100%;
+      height: auto;
+      padding: 0;
+      gap: 16px;
+    }
+
+    .intro-col-center { display: none; }
+
+    .intro-col-side {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .skill-card {
+      padding: 20px;
+      border-radius: 16px;
+    }
+
+    .sk-tags span { font-size: 0.9rem; }
+
+    /* ── Projects — single column, no pin ── */
+    .projects-section { overflow: visible; }
+
+    .projects-layout {
+      grid-template-columns: 1fr;
+      height: auto;
+      padding: 40px 16px 60px;
+      gap: 16px;
+    }
+
+    .center-col { display: none; }
+
+    .card-column {
+      padding: 0 !important;
+      will-change: auto !important;
+    }
+
+    .card-column.left,
+    .card-column.right {
+      justify-self: stretch;
+    }
+
+    .project-card {
+      padding: 18px;
+    }
+
+    .card-title { font-size: 1.05rem; }
+
+    /* Cards always visible on mobile (no hover expand) */
+    .card-expand {
+      max-height: none;
+      opacity: 1;
+      margin-top: 10px;
+    }
+
+    /* ── Outro ── */
+    .outro {
+      min-height: 60vh;
+      padding: 60px 20px;
+    }
+
+    .outro-title { font-size: clamp(1.5rem, 6vw, 2.2rem); }
+  }
+
+  /* Small phones */
+  @media (max-width: 420px) {
+    .intro-col-side {
+      grid-template-columns: 1fr;
+    }
+
+    .skill-card { padding: 16px; }
+    .sk-tags span { font-size: 0.85rem; }
+  }
 </style>
 
 <!-- The actual hedgehog — GSAP will reparent/move this -->
@@ -729,17 +852,26 @@ const sections = [
   import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
   import gsap from 'gsap';
   import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  import {
+    splitElement,
+    computeTrajectories,
+    buildFlyInTimeline,
+    buildFlyOutTimeline,
+  } from '../utils/charSplitter';
 
   gsap.registerPlugin(ScrollTrigger);
+
+  const isMobile = window.matchMedia('(max-width: 768px)').matches;
 
   // Cursor tracking + hover handled by PortfolioLayout
   const cards = document.querySelectorAll('.project-card');
 
   // ── Three.js ──
-  const cntr = document.getElementById('hedgehog-canvas');
+  const cntr = document.getElementById('hedgehog-canvas')!;
+  const hedgeSize = isMobile ? 140 : 280;
   const ren = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  ren.setSize(280, 280);
+  ren.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+  ren.setSize(hedgeSize, hedgeSize);
   ren.toneMapping = THREE.ACESFilmicToneMapping;
   ren.toneMappingExposure = 1.2;
   ren.setClearColor(0x000000, 0);
@@ -766,16 +898,30 @@ const sections = [
 
   const mouse = { x: 0, y: 0 };
   const tRot = { x: 0, y: 0 };
-  let hm = null, hoveredCard = null;
+  let hm: THREE.Group | null = null;
+  let hoveredCard: Element | null = null;
 
   document.addEventListener('mousemove', e => {
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
-  cards.forEach(c => {
-    c.addEventListener('mouseenter', () => { hoveredCard = c; });
-    c.addEventListener('mouseleave', () => { hoveredCard = null; });
-  });
+
+  // On mobile, use device orientation for gentle hedgehog movement
+  if (isMobile && window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.gamma !== null && e.beta !== null) {
+        mouse.x = Math.max(-1, Math.min(1, (e.gamma || 0) / 30));
+        mouse.y = Math.max(-1, Math.min(1, ((e.beta || 0) - 45) / 30));
+      }
+    });
+  }
+
+  if (!isMobile) {
+    cards.forEach(c => {
+      c.addEventListener('mouseenter', () => { hoveredCard = c; });
+      c.addEventListener('mouseleave', () => { hoveredCard = null; });
+    });
+  }
 
   let hScale = 1;
   new GLTFLoader().load('/Hedgehog.glb', gltf => {
@@ -797,8 +943,7 @@ const sections = [
   (function anim() {
     requestAnimationFrame(anim);
     if (hm) {
-      if (hoveredCard) {
-        // Look directly at the hovered card
+      if (hoveredCard && !isMobile) {
         const cardRect = hoveredCard.getBoundingClientRect();
         const hedgeRect = cntr.getBoundingClientRect();
         const hedgeCX = hedgeRect.left + hedgeRect.width / 2;
@@ -807,13 +952,11 @@ const sections = [
         const cardCY = cardRect.top + cardRect.height / 2;
         const dx = cardCX - hedgeCX;
         const dy = cardCY - hedgeCY;
-        // Normalize to roughly -1..1 range based on screen dimensions
         const nx = Math.max(-1, Math.min(1, dx / (window.innerWidth * 0.4)));
         const ny = Math.max(-1, Math.min(1, dy / (window.innerHeight * 0.4)));
         tRot.y = nx * 0.8;
         tRot.x = ny * 0.4;
       } else {
-        // Idle: gentle follow mouse
         tRot.y = mouse.x * 0.25;
         tRot.x = -mouse.y * 0.3;
       }
@@ -824,421 +967,14 @@ const sections = [
     ren.render(sc, cam);
   })();
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // CharSplitter — reusable per-character scroll animation framework
-  // ══════════════════════════════════════════════════════════════════════════
-  //
-  // USAGE:
-  //   1. Add `data-splitfly="unique-id"` to any text element in HTML.
-  //   2. Call `splitElement(el)` to split its text into per-char spans.
-  //      Returns { el, chars, words } for animation.
-  //   3. Use `buildFlyInTimeline(chars, trajectories)` /
-  //      `buildFlyOutTimeline(chars, trajectories)` to build GSAP timelines,
-  //      or use `splitFlyScroll(el, opts)` for full scroll-driven
-  //      fly-in → hold → fly-out sequences.
-  //
-  // Each char gets a seeded random trajectory so animations look organic
-  // but are deterministic across reloads. Trajectory direction is based on
-  // char's position relative to the element center — left chars fly left, etc.
-  //
-  // PRESETS (pass to computeTrajectories):
-  //   'radial'  — chars explode outward from center (default)
-  //   'rise'    — chars float upward with slight horizontal drift
-  //   'fall'    — chars tumble downward
-  //   'scatter' — pure random in all directions
-  //
-  // EXAMPLE (minimal):
-  //   <h2 data-splitfly="my-title">Hello World</h2>
-  //   const el = document.querySelector('[data-splitfly="my-title"]');
-  //   splitFlyScroll(el, {
-  //     trigger: '#my-section',
-  //     start: 'top 80%',
-  //     end: 'bottom 20%',
-  //     preset: 'radial',
-  //   });
-  //
-  // EXAMPLE (manual control):
-  //   const { chars } = splitElement(el);
-  //   const trajs = computeTrajectories(chars, 'rise', 1.5);
-  //   const tl = buildFlyInTimeline(chars, trajs);
-  //   ScrollTrigger.create({ trigger: el, scrub: 1, animation: tl });
-  //
-  // ──────────────────────────────────────────────────────────────────────────
-
-  /** Deterministic pseudo-random from a seed (mulberry32). */
-  function seededRandom(seed) {
-    let t = seed + 0x6D2B79F5;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  }
-
-  /**
-   * Split a DOM element's text into per-character <span>s.
-   * Groups characters into word wrappers for natural line-breaking.
-   * @param {HTMLElement} el — element with data-splitfly
-   * @returns {{ el, chars: HTMLElement[], words: HTMLElement[] }}
-   */
-  // Detect CJK characters (Chinese/Japanese/Korean)
-  const CJK_RE = /[\u3000-\u9FFF\uF900-\uFAFF\u{20000}-\u{2FA1F}]/u;
-
-  function splitElement(el) {
-    const text = el.textContent;
-    el.innerHTML = '';
-    el.style.opacity = '1';
-
-    const chars = [];
-    const words = [];
-    const segments = text.split(/(\s+)/);
-
-    segments.forEach(seg => {
-      if (/^\s+$/.test(seg)) {
-        const sp = document.createElement('span');
-        sp.className = 'sf-space';
-        el.appendChild(sp);
-      } else {
-        const wordEl = document.createElement('span');
-        wordEl.className = 'sf-word';
-        for (const ch of seg) {
-          const span = document.createElement('span');
-          span.className = CJK_RE.test(ch) ? 'sf-char sf-char-cjk' : 'sf-char';
-          span.textContent = ch;
-          wordEl.appendChild(span);
-          chars.push(span);
-        }
-        el.appendChild(wordEl);
-        words.push(wordEl);
-      }
-    });
-
-    return { el, chars, words };
-  }
-
-  /**
-   * Compute per-char fly targets based on preset.
-   * @param {HTMLElement[]} chars
-   * @param {'radial'|'rise'|'fall'|'scatter'} preset
-   * @param {number} intensity — distance multiplier (default 1)
-   * @returns {Array<{x,y,z,rotation,scale}>}
-   */
-  function computeTrajectories(chars, preset = 'radial', intensity = 1) {
-    const count = chars.length;
-    const mid = (count - 1) / 2;
-
-    return chars.map((_, i) => {
-      const seed = i * 2654435761;
-      const r1 = seededRandom(seed);
-      const r2 = seededRandom(seed + 1);
-      const r3 = seededRandom(seed + 2);
-      const norm = (i - mid) / Math.max(mid, 1); // -1 to 1
-
-      switch (preset) {
-        case 'radial': {
-          const angle = norm * Math.PI * 0.6 + (r1 - 0.5) * 0.8;
-          const dist = (80 + r2 * 120) * intensity;
-          return {
-            x: Math.cos(angle) * dist * (norm < 0 ? -1 : 1),
-            y: (r3 - 0.5) * 80 * intensity - 30 * intensity,
-            z: (r1 - 0.3) * 150 * intensity,
-            rotation: norm * 45 * intensity + (r2 - 0.5) * 30,
-            scale: 0.3 + r3 * 0.4,
-          };
-        }
-        case 'rise':
-          return {
-            x: norm * 40 * intensity + (r1 - 0.5) * 30,
-            y: -(60 + r2 * 80) * intensity,
-            z: (r1 - 0.5) * 60 * intensity,
-            rotation: (r3 - 0.5) * 20 * intensity,
-            scale: 0.5 + r1 * 0.3,
-          };
-        case 'fall':
-          return {
-            x: norm * 50 * intensity + (r1 - 0.5) * 40,
-            y: (60 + r2 * 100) * intensity,
-            z: (r3 - 0.5) * 80 * intensity,
-            rotation: norm * 35 * intensity,
-            scale: 0.4 + r2 * 0.3,
-          };
-        case 'scatter':
-        default:
-          return {
-            x: (r1 - 0.5) * 300 * intensity,
-            y: (r2 - 0.5) * 200 * intensity,
-            z: (r3 - 0.5) * 200 * intensity,
-            rotation: (r1 - 0.5) * 90 * intensity,
-            scale: 0.2 + r2 * 0.5,
-          };
-      }
-    });
-  }
-
-  /**
-   * GSAP timeline: chars fly FROM scattered TO assembled (readable).
-   * @param {HTMLElement[]} chars
-   * @param {Object[]} trajectories — from computeTrajectories()
-   * @param {{ stagger?: number, ease?: string }} opts
-   */
-  function buildFlyInTimeline(chars, trajectories, opts = {}) {
-    const { stagger = 0.02, ease = 'power3.out' } = opts;
-    const tl = gsap.timeline();
-    chars.forEach((ch, i) => {
-      const t = trajectories[i];
-      tl.fromTo(ch,
-        { x: t.x, y: t.y, z: t.z, rotation: t.rotation, scale: t.scale, opacity: 0 },
-        { x: 0, y: 0, z: 0, rotation: 0, scale: 1, opacity: 1, ease, duration: 1 },
-        i * stagger
-      );
-    });
-    return tl;
-  }
-
-  /**
-   * GSAP timeline: chars fly FROM assembled TO scattered.
-   * @param {HTMLElement[]} chars
-   * @param {Object[]} trajectories — from computeTrajectories()
-   * @param {{ stagger?: number, ease?: string }} opts
-   */
-  function buildFlyOutTimeline(chars, trajectories, opts = {}) {
-    const { stagger = 0.02, ease = 'power3.in' } = opts;
-    const tl = gsap.timeline();
-    chars.forEach((ch, i) => {
-      const t = trajectories[i];
-      tl.to(ch,
-        { x: t.x, y: t.y, z: t.z, rotation: t.rotation, scale: t.scale, opacity: 0, ease, duration: 1 },
-        i * stagger
-      );
-    });
-    return tl;
-  }
-
-  /**
-   * Full scroll-driven split-fly: fly-in → hold → fly-out.
-   *
-   * @param {HTMLElement} el — element with data-splitfly
-   * @param {object} opts
-   * @param {string}  opts.trigger   — ScrollTrigger trigger (default: el itself)
-   * @param {string}  opts.start     — ST start (default 'top 80%')
-   * @param {string}  opts.end       — ST end (default 'bottom 20%')
-   * @param {string}  opts.preset    — trajectory preset (default 'radial')
-   * @param {number}  opts.intensity — fly distance multiplier (default 1)
-   * @param {string}  opts.inPreset  — override preset for fly-in only
-   * @param {string}  opts.outPreset — override preset for fly-out only
-   * @param {number}  opts.holdRatio — fraction of scroll spent holding (0-1, default 0.3)
-   * @returns {{ chars, words, masterTl }}
-   */
-  function splitFlyScroll(el, opts = {}) {
-    const {
-      trigger,
-      start = 'top 80%',
-      end = 'bottom 20%',
-      preset = 'radial',
-      intensity = 1,
-      inPreset,
-      outPreset,
-      holdRatio = 0.3,
-    } = opts;
-
-    const { chars, words } = splitElement(el);
-    const inTrajs = computeTrajectories(chars, inPreset || preset, intensity);
-    const outTrajs = computeTrajectories(chars, outPreset || preset, intensity);
-
-    // Master timeline: [fly-in] [hold gap] [fly-out]
-    const masterTl = gsap.timeline({
-      scrollTrigger: {
-        trigger: trigger || el,
-        start,
-        end,
-        scrub: 1.5,
-      }
-    });
-
-    masterTl.add(buildFlyInTimeline(chars, inTrajs), 0);
-    masterTl.add(buildFlyOutTimeline(chars, outTrajs), `>${holdRatio}`);
-
-    return { chars, words, masterTl };
-  }
-
-  /**
-   * Avoidance-based text split: chars repel away from a fixed element
-   * (e.g. the hedgehog) as they scroll past it, arcing around it like
-   * water flowing around a rock.
-   *
-   * How it works:
-   *   - Pre-measures each char's resting x/y offset within the element.
-   *   - On every scroll frame, computes each char's viewport position
-   *     vs. the avoidance element's center.
-   *   - Chars within `radius` get pushed outward along the radial
-   *     direction, with an optional tangential arc component.
-   *   - Uses gsap.set() for 60fps performance (no tweens, instant).
-   *
-   * USAGE:
-   *   splitAvoid(el, {
-   *     avoidEl: document.getElementById('hedgehog-mover'),
-   *     radius: 200,      // influence zone in px
-   *     strength: 140,     // max displacement in px
-   *     arc: true,         // add tangential flow (chars curve around)
-   *     fadeEdge: 0.3,     // opacity at max proximity (0 = invisible)
-   *   });
-   *
-   * @param {HTMLElement} el — text element to split
-   * @param {object} opts
-   * @param {HTMLElement} opts.avoidEl   — element to avoid (center used)
-   * @param {number}  opts.radius        — influence radius in px (default 200)
-   * @param {number}  opts.strength      — max push distance in px (default 140)
-   * @param {boolean} opts.arc           — tangential arc flow (default true)
-   * @param {number}  opts.fadeEdge      — min opacity at closest point (default 0.3)
-   * @param {string}  opts.trigger       — ScrollTrigger trigger (default: el)
-   * @returns {{ chars, update, kill }}
-   */
-  function splitAvoid(el, opts = {}) {
-    const {
-      avoidEl,
-      radius = 200,
-      strength = 140,
-      arc = true,
-      fadeEdge = 0.3,
-      trigger,
-    } = opts;
-
-    const { chars, words } = splitElement(el);
-
-    // Pre-measure each char's resting position relative to element's top-left.
-    // Must wait one frame for layout after splitElement rewrites innerHTML.
-    let charOffsets = null;
-
-    function measureChars() {
-      const elRect = el.getBoundingClientRect();
-      charOffsets = chars.map(ch => {
-        const r = ch.getBoundingClientRect();
-        return {
-          // Center of char relative to element's top-left
-          relX: (r.left + r.width / 2) - elRect.left,
-          relY: (r.top + r.height / 2) - elRect.top,
-        };
-      });
-    }
-
-    function update() {
-      if (!charOffsets) {
-        measureChars();
-      }
-
-      const avoidRect = avoidEl.getBoundingClientRect();
-      const aCX = avoidRect.left + avoidRect.width / 2;
-      const aCY = avoidRect.top + avoidRect.height / 2;
-      const elRect = el.getBoundingClientRect();
-
-      chars.forEach((ch, i) => {
-        const off = charOffsets[i];
-        // Char's current viewport center (before any transform)
-        const charVX = elRect.left + off.relX;
-        const charVY = elRect.top + off.relY;
-
-        const dx = charVX - aCX;
-        const dy = charVY - aCY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < radius && dist > 0.1) {
-          const factor = 1 - (dist / radius);    // 1 at center → 0 at edge
-          const eased = factor * factor;          // quadratic ease — smooth falloff
-          const angle = Math.atan2(dy, dx);
-
-          let pushX, pushY;
-          if (arc) {
-            // Radial push + tangential sweep = chars arc around the obstacle
-            const tangent = angle + Math.PI / 2 * (dx >= 0 ? 1 : -1);
-            pushX = Math.cos(angle) * strength * eased
-                  + Math.cos(tangent) * strength * 0.35 * eased;
-            pushY = Math.sin(angle) * strength * eased
-                  + Math.sin(tangent) * strength * 0.35 * eased;
-          } else {
-            // Pure radial push — chars split straight outward
-            pushX = Math.cos(angle) * strength * eased;
-            pushY = Math.sin(angle) * strength * eased;
-          }
-
-          gsap.set(ch, {
-            x: pushX,
-            y: pushY,
-            rotation: eased * (dx >= 0 ? 18 : -18),
-            opacity: 1 - eased * (1 - fadeEdge),
-            scale: 1 - eased * 0.15,
-          });
-        } else {
-          // Outside influence — snap back to resting position
-          gsap.set(ch, { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1 });
-        }
-      });
-    }
-
-    const st = ScrollTrigger.create({
-      trigger: trigger || el,
-      start: 'top bottom',
-      end: 'bottom top',
-      onUpdate: update,
-    });
-
-    // Also run update on resize (char positions change)
-    const onResize = () => { charOffsets = null; };
-    window.addEventListener('resize', onResize);
-
-    return {
-      chars,
-      words,
-      update,
-      kill: () => { st.kill(); window.removeEventListener('resize', onResize); },
-    };
-  }
-
   // ══════════════════════════════════════════════
   // Page animations
   // ══════════════════════════════════════════════
 
-  const hedgeMover = document.getElementById('hedgehog-mover');
-
-  // ── "matter" underline + vocab blob hover ──
-  const matterWord = document.getElementById('matter-trigger');
-  const blobs = document.querySelectorAll('.vocab-blob');
-  let blobFloatTweens = [];
-
-  matterWord.addEventListener('mouseenter', () => {
-    blobFloatTweens.forEach(tw => tw.kill());
-    blobFloatTweens = [];
-
-    blobs.forEach((blob, i) => {
-      const rect = blob.getBoundingClientRect();
-      const fromLeft = rect.left < window.innerWidth / 2;
-      gsap.fromTo(blob,
-        { opacity: 0, scale: 0.5, x: fromLeft ? -25 : 25, y: 12 },
-        {
-          opacity: 1, scale: 1, x: 0, y: 0,
-          duration: 0.55, ease: 'back.out(1.4)', delay: i * 0.07,
-          onComplete: () => {
-            const tw = gsap.to(blob, {
-              y: -6, duration: 1.8 + i * 0.3, ease: 'sine.inOut',
-              yoyo: true, repeat: -1,
-            });
-            blobFloatTweens.push(tw);
-          }
-        }
-      );
-    });
-  });
-
-  matterWord.addEventListener('mouseleave', () => {
-    blobFloatTweens.forEach(tw => tw.kill());
-    blobFloatTweens = [];
-    blobs.forEach((blob, i) => {
-      gsap.to(blob, {
-        opacity: 0, scale: 0.8, y: -8,
-        duration: 0.3, ease: 'power2.in', delay: i * 0.03,
-      });
-    });
-  });
+  const hedgeMover = document.getElementById('hedgehog-mover')!;
 
   // ── Hero quote: load in, chars rise away on scroll ──
-  const heroQuoteEl = document.querySelector('[data-splitfly="hero-quote"]');
+  const heroQuoteEl = document.querySelector('[data-splitfly="hero-quote"]') as HTMLElement;
   const heroQuoteSplit = splitElement(heroQuoteEl);
   const heroQuoteTrajs = computeTrajectories(heroQuoteSplit.chars, 'rise', 0.6);
 
@@ -1255,168 +991,13 @@ const sections = [
 
   gsap.to('.hero-sub', { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.5 });
 
-  // ── Hedgehog movement: hero bottom → screen center ──
-  ScrollTrigger.create({
-    trigger: '#stack',
-    start: 'top bottom',
-    end: 'top top',
-    scrub: 1,
-    onUpdate: (self) => {
-      const p = self.progress;
-      const startBottom = window.innerHeight * 0.06;
-      const endY = window.innerHeight * 0.5 - 185;
-      const startY = window.innerHeight - startBottom - 280;
-      const currentY = startY + (endY - startY) * p;
-      hedgeMover.style.position = 'fixed';
-      hedgeMover.style.bottom = 'auto';
-      hedgeMover.style.top = currentY + 'px';
-      hedgeMover.style.left = '50%';
-      hedgeMover.style.transform = 'translateX(-50%)';
-    }
-  });
-
-  // Keep hedgehog visible through projects section.
-  // The projects section is pinned (+3000px scroll), so we tie to the
-  // pin's own ScrollTrigger end by using the same trigger + end value.
-  ScrollTrigger.create({
-    trigger: '#projects',
-    start: 'top top',
-    end: '+=3000',
-    onLeave: () => {
-      gsap.to(hedgeMover, { opacity: 0, duration: 0.5 });
-    },
-    onEnterBack: () => {
-      gsap.to(hedgeMover, { opacity: 1, duration: 0.3 });
-    },
-  });
-
-  // ── Intro: hedgehog scales up as section enters (stays big) ──
-  gsap.to('#hedgehog-canvas', {
-    scale: 1.29,
-    transformOrigin: 'center center',
-    ease: 'none',
-    scrollTrigger: {
-      trigger: '#stack',
-      start: 'top 70%',
-      end: 'top top',
-      scrub: 1,
-    }
-  });
-
-  // ── Stack text: show when section visible, fade out on any scroll past ──
-  const introTextEl = document.getElementById('intro-text-1');
-  const stackSection = document.getElementById('stack');
-
-  ScrollTrigger.create({
-    trigger: stackSection,
-    start: 'top top',
-    end: 'bottom bottom',
-    onUpdate: (self) => {
-      // progress 0 = just entered, 1 = scrolled through all 250vh
-      // Show at 0, fade out quickly as soon as user scrolls
-      const p = self.progress;
-      if (p < 0.05) {
-        // First 5% — fully visible
-        introTextEl.style.opacity = '1';
-      } else if (p < 0.15) {
-        // 5%–15% — fade out
-        introTextEl.style.opacity = String(1 - (p - 0.05) / 0.1);
-      } else {
-        introTextEl.style.opacity = '0';
-      }
-    },
-    onEnter: () => { introTextEl.style.opacity = '1'; },
-    onLeaveBack: () => { introTextEl.style.opacity = '0'; },
-  });
-
-  // ── Skill cards: start off-screen in 4 directions ──
-  gsap.set('#skill-tl', { x: -420, opacity: 0 });
-  gsap.set('#skill-tr', { y: -420, opacity: 0 });
-  gsap.set('#skill-bl', { y: 420, opacity: 0 });
-  gsap.set('#skill-br', { x: 420, opacity: 0 });
-
-  // Cards fly in as section enters
-  const cardsInTl = gsap.timeline({
-    scrollTrigger: {
-      trigger: '#stack',
-      start: 'top 55%',
-      end: 'top top',
-      scrub: 1,
-    }
-  });
-  cardsInTl
-    .to('#skill-tl', { x: 0, opacity: 1, ease: 'power2.out' }, 0)
-    .to('#skill-tr', { y: 0, opacity: 1, ease: 'power2.out' }, 0.05)
-    .to('#skill-bl', { y: 0, opacity: 1, ease: 'power2.out' }, 0.1)
-    .to('#skill-br', { x: 0, opacity: 1, ease: 'power2.out' }, 0.15);
-
-  // Cards fly out in reverse as section exits toward projects
-  const cardsOutTl = gsap.timeline({
-    scrollTrigger: {
-      trigger: '#stack',
-      start: 'bottom 75%',
-      end: 'bottom 25%',
-      scrub: 1,
-    }
-  });
-  cardsOutTl
-    .to('#skill-tl', { x: -420, opacity: 0, ease: 'power2.in' }, 0)
-    .to('#skill-tr', { y: -420, opacity: 0, ease: 'power2.in' }, 0.05)
-    .to('#skill-bl', { y: 420, opacity: 0, ease: 'power2.in' }, 0.1)
-    .to('#skill-br', { x: 420, opacity: 0, ease: 'power2.in' }, 0.15);
-
-  // ── Cards ──
-  cards.forEach(c => c.classList.remove('card-hidden'));
-
-  // Measure columns + viewport
-  const colLeft = document.getElementById('col-left');
-  const colRight = document.getElementById('col-right');
-  const vh = window.innerHeight;
-  const leftH = colLeft.offsetHeight;
-  const rightH = colRight.offsetHeight;
-
-  // Initial positions: left fully above viewport, right fully below
-  gsap.set(colLeft, { y: -leftH });
-  gsap.set(colRight, { y: vh });
-
-  const projectsTl = gsap.timeline({
-    scrollTrigger: {
-      trigger: '#projects',
-      start: 'top top',
-      end: '+=3000',
-      scrub: 1,
-      pin: true,
-    }
-  });
-
-  // Left: enters from TOP, slides DOWN through and out bottom
-  projectsTl.to(colLeft, { y: vh, ease: 'none' }, 0);
-
-  // Right: enters from BOTTOM, slides UP through and out top
-  projectsTl.to(colRight, { y: -rightH, ease: 'none' }, 0);
-
-  // Per-card fade-in
-  cards.forEach(card => {
-    gsap.fromTo(card,
-      { opacity: 0, scale: 0.95 },
-      { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out',
-        scrollTrigger: {
-          trigger: card,
-          start: 'top 90%',
-          toggleActions: 'play none none reverse',
-        },
-      }
-    );
-  });
-
   // ── Outro: chars assemble from scattered positions ──
   gsap.to('.outro-line', {
     opacity: 1, duration: 0.8, ease: 'power3.out',
     scrollTrigger: { trigger: '#ongoing', start: 'top 70%', toggleActions: 'play none none reverse' },
   });
 
-  // Outro title — chars fall in from above
-  const outroTitleEl = document.querySelector('[data-splitfly="outro-title"]');
+  const outroTitleEl = document.querySelector('[data-splitfly="outro-title"]') as HTMLElement;
   const outroSplit = splitElement(outroTitleEl);
   const outroTrajs = computeTrajectories(outroSplit.chars, 'fall', 1);
   const outroInTl = buildFlyInTimeline(outroSplit.chars, outroTrajs, { stagger: 0.03, ease: 'power3.out' });
@@ -1428,8 +1009,7 @@ const sections = [
     animation: outroInTl,
   });
 
-  // Outro subtitle — gentle rise-in
-  const outroSubEl = document.querySelector('[data-splitfly="outro-sub"]');
+  const outroSubEl = document.querySelector('[data-splitfly="outro-sub"]') as HTMLElement;
   const outroSubSplit = splitElement(outroSubEl);
   const outroSubTrajs = computeTrajectories(outroSubSplit.chars, 'rise', 0.6);
   const outroSubTl = buildFlyInTimeline(outroSubSplit.chars, outroSubTrajs, { stagger: 0.02, ease: 'power3.out' });
@@ -1440,6 +1020,231 @@ const sections = [
     scrub: 1,
     animation: outroSubTl,
   });
+
+  // ══════════════════════════════════════════════
+  // Desktop-only animations
+  // ══════════════════════════════════════════════
+
+  if (!isMobile) {
+    // ── "matter" underline + vocab blob hover ──
+    const matterWord = document.getElementById('matter-trigger')!;
+    const blobs = document.querySelectorAll('.vocab-blob');
+    let blobFloatTweens: gsap.core.Tween[] = [];
+
+    matterWord.addEventListener('mouseenter', () => {
+      blobFloatTweens.forEach(tw => tw.kill());
+      blobFloatTweens = [];
+
+      blobs.forEach((blob, i) => {
+        const rect = blob.getBoundingClientRect();
+        const fromLeft = rect.left < window.innerWidth / 2;
+        gsap.fromTo(blob,
+          { opacity: 0, scale: 0.5, x: fromLeft ? -25 : 25, y: 12 },
+          {
+            opacity: 1, scale: 1, x: 0, y: 0,
+            duration: 0.55, ease: 'back.out(1.4)', delay: i * 0.07,
+            onComplete: () => {
+              const tw = gsap.to(blob, {
+                y: -6, duration: 1.8 + i * 0.3, ease: 'sine.inOut',
+                yoyo: true, repeat: -1,
+              });
+              blobFloatTweens.push(tw);
+            }
+          }
+        );
+      });
+    });
+
+    matterWord.addEventListener('mouseleave', () => {
+      blobFloatTweens.forEach(tw => tw.kill());
+      blobFloatTweens = [];
+      blobs.forEach((blob, i) => {
+        gsap.to(blob, {
+          opacity: 0, scale: 0.8, y: -8,
+          duration: 0.3, ease: 'power2.in', delay: i * 0.03,
+        });
+      });
+    });
+
+    // ── Hedgehog movement: hero bottom → screen center ──
+    ScrollTrigger.create({
+      trigger: '#stack',
+      start: 'top bottom',
+      end: 'top top',
+      scrub: 1,
+      onUpdate: (self) => {
+        const p = self.progress;
+        const startBottom = window.innerHeight * 0.06;
+        const endY = window.innerHeight * 0.5 - 185;
+        const startY = window.innerHeight - startBottom - 280;
+        const currentY = startY + (endY - startY) * p;
+        hedgeMover.style.position = 'fixed';
+        hedgeMover.style.bottom = 'auto';
+        hedgeMover.style.top = currentY + 'px';
+        hedgeMover.style.left = '50%';
+        hedgeMover.style.transform = 'translateX(-50%)';
+      }
+    });
+
+    // Keep hedgehog visible through projects section
+    ScrollTrigger.create({
+      trigger: '#projects',
+      start: 'top top',
+      end: '+=3000',
+      onLeave: () => {
+        gsap.to(hedgeMover, { opacity: 0, duration: 0.5 });
+      },
+      onEnterBack: () => {
+        gsap.to(hedgeMover, { opacity: 1, duration: 0.3 });
+      },
+    });
+
+    // ── Intro: hedgehog scales up as section enters ──
+    gsap.to('#hedgehog-canvas', {
+      scale: 1.29,
+      transformOrigin: 'center center',
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '#stack',
+        start: 'top 70%',
+        end: 'top top',
+        scrub: 1,
+      }
+    });
+
+    // ── Stack text: show when section visible, fade out on scroll ──
+    const introTextEl = document.getElementById('intro-text-1')!;
+    const stackSection = document.getElementById('stack')!;
+
+    ScrollTrigger.create({
+      trigger: stackSection,
+      start: 'top top',
+      end: 'bottom bottom',
+      onUpdate: (self) => {
+        const p = self.progress;
+        if (p < 0.05) {
+          introTextEl.style.opacity = '1';
+        } else if (p < 0.15) {
+          introTextEl.style.opacity = String(1 - (p - 0.05) / 0.1);
+        } else {
+          introTextEl.style.opacity = '0';
+        }
+      },
+      onEnter: () => { introTextEl.style.opacity = '1'; },
+      onLeaveBack: () => { introTextEl.style.opacity = '0'; },
+    });
+
+    // ── Skill cards: fly in from 4 directions ──
+    gsap.set('#skill-tl', { x: -420, opacity: 0 });
+    gsap.set('#skill-tr', { y: -420, opacity: 0 });
+    gsap.set('#skill-bl', { y: 420, opacity: 0 });
+    gsap.set('#skill-br', { x: 420, opacity: 0 });
+
+    const cardsInTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '#stack',
+        start: 'top 55%',
+        end: 'top top',
+        scrub: 1,
+      }
+    });
+    cardsInTl
+      .to('#skill-tl', { x: 0, opacity: 1, ease: 'power2.out' }, 0)
+      .to('#skill-tr', { y: 0, opacity: 1, ease: 'power2.out' }, 0.05)
+      .to('#skill-bl', { y: 0, opacity: 1, ease: 'power2.out' }, 0.1)
+      .to('#skill-br', { x: 0, opacity: 1, ease: 'power2.out' }, 0.15);
+
+    const cardsOutTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '#stack',
+        start: 'bottom 75%',
+        end: 'bottom 25%',
+        scrub: 1,
+      }
+    });
+    cardsOutTl
+      .to('#skill-tl', { x: -420, opacity: 0, ease: 'power2.in' }, 0)
+      .to('#skill-tr', { y: -420, opacity: 0, ease: 'power2.in' }, 0.05)
+      .to('#skill-bl', { y: 420, opacity: 0, ease: 'power2.in' }, 0.1)
+      .to('#skill-br', { x: 420, opacity: 0, ease: 'power2.in' }, 0.15);
+
+    // ── Project cards: opposing column scroll ──
+    cards.forEach(c => c.classList.remove('card-hidden'));
+
+    const colLeft = document.getElementById('col-left')!;
+    const colRight = document.getElementById('col-right')!;
+    const vh = window.innerHeight;
+    const leftH = colLeft.offsetHeight;
+    const rightH = colRight.offsetHeight;
+
+    gsap.set(colLeft, { y: -leftH });
+    gsap.set(colRight, { y: vh });
+
+    const projectsTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: '#projects',
+        start: 'top top',
+        end: '+=3000',
+        scrub: 1,
+        pin: true,
+      }
+    });
+
+    projectsTl.to(colLeft, { y: vh, ease: 'none' }, 0);
+    projectsTl.to(colRight, { y: -rightH, ease: 'none' }, 0);
+
+    cards.forEach(card => {
+      gsap.fromTo(card,
+        { opacity: 0, scale: 0.95 },
+        { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out',
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 90%',
+            toggleActions: 'play none none reverse',
+          },
+        }
+      );
+    });
+  }
+
+  // ══════════════════════════════════════════════
+  // Mobile-only animations
+  // ══════════════════════════════════════════════
+
+  if (isMobile) {
+    // Hedgehog stays fixed at bottom-right via CSS, no scroll repositioning needed.
+    // Just make sure it's visible and fixed from the start.
+    hedgeMover.style.position = 'fixed';
+
+    // Skill cards: simple staggered fade-in on scroll
+    const skillCards = document.querySelectorAll('.skill-card');
+    skillCards.forEach((card, i) => {
+      gsap.from(card, {
+        opacity: 0, y: 30,
+        duration: 0.6, ease: 'power2.out',
+        delay: i * 0.1,
+        scrollTrigger: {
+          trigger: card,
+          start: 'top 85%',
+          toggleActions: 'play none none reverse',
+        },
+      });
+    });
+
+    // Project cards: simple staggered reveal, no pin or opposing scroll
+    cards.forEach(c => c.classList.remove('card-hidden'));
+    cards.forEach((card, i) => {
+      gsap.from(card, {
+        opacity: 0, y: 40,
+        duration: 0.5, ease: 'power2.out',
+        scrollTrigger: {
+          trigger: card,
+          start: 'top 90%',
+          toggleActions: 'play none none reverse',
+        },
+      });
+    });
+  }
 </script>
 
 </PortfolioLayout>
