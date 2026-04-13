@@ -4,16 +4,20 @@ interface Props {
   date: Date;
   section: string;
   slug: string;
+  readingTime?: number;
 }
 
-const { title, date, section, slug } = Astro.props;
+const { title, date, section, slug, readingTime } = Astro.props;
 ---
 
 <div class="post-list-item">
   <h3 class="post-title">
     <a href={`/${section}/${slug}`}>{title}</a>
   </h3>
-  <time class="post-date" datetime={date.toISOString()}>
-    {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-  </time>
+  <div class="post-item-meta">
+    {readingTime && <span class="post-reading-time">{readingTime} min</span>}
+    <time class="post-date" datetime={date.toISOString()}>
+      {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+    </time>
+  </div>
 </div>

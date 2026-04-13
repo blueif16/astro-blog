@@ -150,13 +150,23 @@ const { title, description, date, tags = [], content, section } = Astro.props;
   /* ── Post body ── */
   .post-body { opacity: 0; }
 
+  .post-body > p:first-of-type::first-letter {
+    font-family: 'DM Serif Display', serif;
+    float: left;
+    font-size: 3.4em;
+    line-height: 0.85;
+    padding-right: 0.08em;
+    margin-top: 0.05em;
+    color: var(--accent);
+  }
+
   .post-body p {
     font-family: 'Cormorant Garamond', serif;
     font-size: 1.22rem;
     font-weight: 300;
-    line-height: 1.78;
+    line-height: 1.82;
     color: var(--text);
-    margin-bottom: 1.5em;
+    margin-bottom: 1.6em;
   }
 
   .post-body h2 {

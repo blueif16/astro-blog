@@ -34,14 +34,19 @@ const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
     {years.map(year => (
       <div class="year-group">
         <div class="year-label">{year}</div>
-        {postsByYear[year].map(post => (
-          <PostCard
-            title={post.data.title}
-            date={post.data.date}
-            section={section!}
-            slug={post.id}
-          />
-        ))}
+        {postsByYear[year].map(post => {
+          const words = (post.body || '').trim().split(/\s+/).length;
+          const readingTime = Math.ceil(words / 200);
+          return (
+            <PostCard
+              title={post.data.title}
+              date={post.data.date}
+              section={section!}
+              slug={post.id}
+              readingTime={readingTime}
+            />
+          );
+        })}
       </div>
     ))}
   </div>

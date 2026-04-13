@@ -1,5 +1,4 @@
 import { defineCollection, z } from 'astro:content';
-import { glob } from 'astro/loaders';
 import { githubLoader } from './github-loader';
 
 const contentSchema = z.object({
@@ -11,7 +10,13 @@ const contentSchema = z.object({
 });
 
 const blog = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/blog' }),
+  loader: githubLoader({
+    repo: import.meta.env.VAULT_REPO || 'blueif16/brain',
+    path: 'publish/blog',
+    pattern: /\.md$/,
+    token: import.meta.env.VAULT_TOKEN || '',
+    branch: 'main',
+  }),
   schema: contentSchema,
 });
 

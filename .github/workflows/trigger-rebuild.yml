@@ -1,10 +1,10 @@
 # ─────────────────────────────────────────────────────────────────────
-# Add this workflow to your PRIVATE briefings repo (e.g. blueif16/brain)
+# Add this workflow to your PRIVATE repo (e.g. blueif16/brain)
 # NOT to the astro-blog repo.
 #
 # Setup:
 #   1. In Vercel → astro-blog project → Settings → Git → Deploy Hooks
-#      → Create hook (name: "briefing-push", branch: "main")
+#      → Create hook (name: "brain-push", branch: "main")
 #      → Copy the URL
 #   2. In GitHub → brain repo → Settings → Secrets → Actions
 #      → Add secret: VERCEL_DEPLOY_HOOK = <the URL from step 1>
@@ -16,6 +16,7 @@ on:
   push:
     paths:
       - 'resources/briefings/**'
+      - 'publish/blog/**'
 
 jobs:
   trigger:
