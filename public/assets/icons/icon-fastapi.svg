@@ -1,0 +1,7 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="32" cy="32" r="20" stroke="#059669" stroke-width="2"/>
+  <path d="M22 28L32 22L42 28L32 34L22 28Z" stroke="#059669" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M22 36L32 42L42 36" stroke="#059669" stroke-width="2" stroke-linejoin="round"/>
+  <line x1="32" y1="34" x2="32" y2="42" stroke="#059669" stroke-width="2"/>
+  <text x="32" y="54" font-size="8" fill="#059669" text-anchor="middle">FastAPI</text>
+</svg>

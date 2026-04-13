@@ -1,7 +1,5 @@
 ---
-import BaseLayout from './BaseLayout.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
+import PortfolioLayout from './PortfolioLayout.astro';
 
 interface Props {
   title: string;
@@ -12,19 +10,191 @@ interface Props {
 const { title, description, count } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description}>
-  <Header />
-  <main class="page-container">
-    <div class="section-hero animate-in">
-      <h1>{title}</h1>
-      {count !== undefined && (
-        <p class="section-count">{count} {count === 1 ? 'post' : 'posts'}</p>
-      )}
-    </div>
-    <hr class="section-divider animate-in animate-in-delay-1" />
-    <div class="animate-in animate-in-delay-2">
-      <slot />
-    </div>
-  </main>
-  <Footer />
-</BaseLayout>
+<PortfolioLayout title={title} description={description}>
+
+<style is:global>
+  /* ── Section page: warm amber accent ── */
+  body {
+    --accent: #b85c14;
+    --accent-dim: rgba(184, 92, 20, 0.12);
+    --card-border-hover: rgba(184, 92, 20, 0.28);
+    --card-shadow-hover: 0 12px 48px rgba(0,0,0,0.10), 0 0 0 1px rgba(184,92,20,0.12);
+  }
+
+  /* ── Layout ── */
+  .section-page {
+    min-height: 100vh;
+    padding: 130px 40px 100px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Hero ── */
+  .sl-hero {
+    margin-bottom: 56px;
+  }
+
+  .sl-eyebrow {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    opacity: 0;
+  }
+
+  .sl-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 12px;
+    opacity: 0;
+  }
+
+  .sl-count {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    opacity: 0;
+  }
+
+  .sl-rule {
+    width: 40px;
+    height: 2px;
+    background: var(--accent);
+    border: none;
+    border-radius: 1px;
+    margin: 28px 0 52px;
+    opacity: 0;
+  }
+
+  /* ── Year groups ── */
+  .year-group {
+    margin-bottom: 44px;
+  }
+
+  .year-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    padding-left: 20px;
+    position: relative;
+  }
+
+  .year-label::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.55;
+  }
+
+  /* ── Post list item (PostCard override) ── */
+  .post-list-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    margin-bottom: 2px;
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease,
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+  }
+
+  .post-list-item:hover {
+    background: var(--card-bg);
+    border-color: var(--card-border);
+    transform: translateX(8px);
+  }
+
+  .post-title {
+    margin: 0;
+  }
+
+  .post-title a {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: var(--text);
+    text-decoration: none;
+    transition: color 0.25s ease;
+    cursor: inherit;
+  }
+
+  .post-title a:hover {
+    color: var(--accent);
+  }
+
+  .post-date {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>
+
+<div class="section-page">
+  <div class="sl-hero">
+    <p class="sl-eyebrow" id="sl-eyebrow">Writing</p>
+    <h1 class="sl-title" id="sl-title">{title}</h1>
+    {count !== undefined && (
+      <p class="sl-count" id="sl-count">{count} {count === 1 ? 'post' : 'posts'}</p>
+    )}
+    <hr class="sl-rule" id="sl-rule" />
+  </div>
+
+  <div id="sl-list">
+    <slot />
+  </div>
+</div>
+
+<script>
+  // Hero entrance
+  const hero = [
+    { id: 'sl-eyebrow', delay: 0.08 },
+    { id: 'sl-title',   delay: 0.18 },
+    { id: 'sl-count',   delay: 0.30 },
+    { id: 'sl-rule',    delay: 0.40 },
+  ];
+
+  hero.forEach(({ id, delay }) => {
+    const el = document.getElementById(id) as HTMLElement | null;
+    if (!el) return;
+    el.style.transition = `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`;
+    el.style.transform = 'translateY(14px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }));
+  });
+
+  // Staggered post rows
+  const rows = document.querySelectorAll<HTMLElement>('.post-list-item');
+  rows.forEach((row, i) => {
+    const delay = 0.48 + i * 0.038;
+    row.style.transition = `opacity 0.5s ease ${delay}s, transform 0.5s ease ${delay}s, background 0.3s ease, border-color 0.3s ease`;
+    row.style.transform = 'translateY(8px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      row.style.opacity = '1';
+      row.style.transform = 'translateY(0)';
+    }));
+  });
+</script>
+
+</PortfolioLayout>

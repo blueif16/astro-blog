@@ -1,0 +1,174 @@
+---
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = Astro.url.pathname } = Astro.props;
+
+const flyoutPages = [
+  { href: '/portfolio', title: 'Portfolio', sub: 'Projects & work', icon: 'grid' as const },
+  { href: '/blog', title: 'Blog', sub: 'Thoughts & writing', icon: 'text' as const },
+  { href: '/feed', title: 'Feed', sub: 'News & updates', icon: 'signal' as const },
+];
+---
+
+<div class="pf" id="page-flyout">
+  {flyoutPages.map((p, i) => (
+    <a
+      href={p.href}
+      class:list={['pf-card', { 'pf-current': currentPath.startsWith(p.href) }]}
+      style={`--delay-in: ${(flyoutPages.length - 1 - i) * 60}ms; --delay-out: ${i * 40}ms`}
+      data-cursor-hover
+    >
+      <div class="pf-icon">
+        {p.icon === 'grid' && (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="5.5" height="5.5" rx="1.5"/>
+            <rect x="10.5" y="2" width="5.5" height="5.5" rx="1.5"/>
+            <rect x="2" y="10.5" width="5.5" height="5.5" rx="1.5"/>
+            <rect x="10.5" y="10.5" width="5.5" height="5.5" rx="1.5"/>
+          </svg>
+        )}
+        {p.icon === 'text' && (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <path d="M3 5h12M3 9h8M3 13h12"/>
+          </svg>
+        )}
+        {p.icon === 'signal' && (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round">
+            <circle cx="5" cy="13" r="1.5" fill="currentColor" stroke="none"/>
+            <path d="M5 9.5a3.5 3.5 0 0 1 3.5 3.5"/>
+            <path d="M5 6a7 7 0 0 1 7 7"/>
+          </svg>
+        )}
+      </div>
+      <span class="pf-title">{p.title}</span>
+      <span class="pf-sub">{p.sub}</span>
+    </a>
+  ))}
+  <button class="pf-trigger" data-cursor-hover aria-label="Navigate pages">
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+      <circle cx="5" cy="5" r="1.5"/>
+      <circle cx="11" cy="5" r="1.5"/>
+      <circle cx="5" cy="11" r="1.5"/>
+      <circle cx="11" cy="11" r="1.5"/>
+    </svg>
+  </button>
+</div>
+
+<style is:global>
+  .pf {
+    position: fixed;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 9988;
+  }
+
+  .pf-trigger {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--card-bg, rgba(245, 244, 240, 0.72));
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--card-border, rgba(58, 58, 56, 0.08));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim, rgba(58, 58, 56, 0.45));
+    cursor: inherit;
+    transition:
+      border-color 0.4s ease,
+      color 0.4s ease,
+      box-shadow 0.4s ease,
+      transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+    animation: pf-breathe 4s ease-in-out infinite;
+    padding: 0;
+  }
+
+  @keyframes pf-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+
+  .pf:hover .pf-trigger {
+    border-color: var(--card-border-hover, rgba(5, 150, 105, 0.3));
+    color: var(--accent, #059669);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    animation: none;
+    transform: scale(1);
+  }
+
+  .pf-card {
+    width: 130px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--card-bg, rgba(245, 244, 240, 0.72));
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--card-border, rgba(58, 58, 56, 0.08));
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-decoration: none !important;
+    background-image: none !important;
+    opacity: 0;
+    transform: translateX(16px) scale(0.95);
+    pointer-events: none;
+    transition:
+      opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+    transition-delay: var(--delay-out);
+    cursor: inherit;
+  }
+
+  .pf:hover .pf-card {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    pointer-events: auto;
+    transition-delay: var(--delay-in);
+  }
+
+  .pf-card:hover {
+    border-color: var(--card-border-hover, rgba(5, 150, 105, 0.3)) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+    background-image: none !important;
+  }
+
+  .pf-card.pf-current {
+    border-color: var(--card-border-hover, rgba(5, 150, 105, 0.2));
+  }
+
+  .pf-icon {
+    color: var(--accent, #059669);
+    line-height: 0;
+  }
+
+  .pf-title {
+    font-family: 'DM Serif Display', 'Instrument Serif', serif;
+    font-size: 0.92rem;
+    font-weight: 400;
+    color: var(--text, #3a3a38);
+    line-height: 1.2;
+  }
+
+  .pf-sub {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 500;
+    color: var(--text-dim, rgba(58, 58, 56, 0.5));
+    line-height: 1.3;
+  }
+
+  @media (max-width: 1024px) {
+    .pf { display: none; }
+  }
+</style>

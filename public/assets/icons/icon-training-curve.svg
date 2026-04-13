@@ -1,0 +1,14 @@
+<svg width="200" height="150" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Grid lines -->
+  <line x1="20" y1="130" x2="180" y2="130" stroke="#059669" stroke-width="1" opacity="0.3"/>
+  <line x1="20" y1="100" x2="180" y2="100" stroke="#059669" stroke-width="1" opacity="0.3"/>
+  <line x1="20" y1="70" x2="180" y2="70" stroke="#059669" stroke-width="1" opacity="0.3"/>
+  <line x1="20" y1="40" x2="180" y2="40" stroke="#059669" stroke-width="1" opacity="0.3"/>
+
+  <!-- Training loss curve (decreasing) -->
+  <path d="M20 30 Q60 50 100 80 T180 120" stroke="#059669" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Axis labels -->
+  <text x="100" y="145" font-size="10" fill="#059669" text-anchor="middle">Epochs</text>
+  <text x="10" y="75" font-size="10" fill="#059669" text-anchor="middle" transform="rotate(-90 10 75)">Loss</text>
+</svg>

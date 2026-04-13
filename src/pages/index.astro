@@ -5,73 +5,28 @@ import StyledComponentsWrapper from '../components/StyledComponentsWrapper.jsx';
 // Import MetaMask components
 import SiteHeader from '../components/metamask/navigation/SiteHeader.jsx';
 import SiteFooter from '../components/metamask/navigation/SiteFooter.jsx';
+import AnimatedLogo from '../components/metamask/animation/AnimatedLogo.jsx';
 import AnimatedFeatureSection from '../components/metamask/animation/AnimatedFeatureSection.jsx';
 import AnimatedCarousel from '../components/metamask/animation/AnimatedCarousel.jsx';
+import ContentCarousel from '../components/metamask/animation/ContentCarousel.jsx';
+import Accordion from '../components/metamask/interactive/Accordion.jsx';
+import CallToAction from '../components/metamask/interactive/CallToAction.jsx';
 import FullWidthBanner from '../components/metamask/interactive/FullWidthBanner.jsx';
-
-// Personal content
-const CONTENT = {
-  name: "Shiran",
-  title: "Builder of AI-Powered Developer Tools",
-  subtitle: "I orchestrate AI agents to ship software. CS @ Northeastern.",
-  whatIDo: {
-    title: "What I Do",
-    description: "I design and build multi-agent orchestration systems, Claude Code plugins, and workflow automation. I think programming is transitioning from code-oriented to agent-and-context-oriented.",
-  },
-  projects: [
-    {
-      title: "CloudMate",
-      description: "Tmux-based orchestration for parallel Claude Code sessions across git worktrees with automated PR pipelines.",
-      tags: ["Claude Code", "tmux", "git worktrees"],
-      image: "/placeholder-project.png",
-    },
-    {
-      title: "GoDag",
-      description: "Natural language → DAG-based multi-agent task execution with real-time visualization dashboard.",
-      tags: ["DAG", "Multi-agent", "React Flow"],
-      image: "/placeholder-project.png",
-    },
-    {
-      title: "AccessVision",
-      description: "AI-powered WCAG accessibility audit agent for the Gemini Live Agent Challenge.",
-      tags: ["Accessibility", "Gemini", "Hackathon"],
-      image: "/placeholder-project.png",
-    },
-    {
-      title: "OpenClaw",
-      description: "Workflow documentation and tooling for Chinese enterprise users — 飞书, 钉钉, 企业微信.",
-      tags: ["China-first", "Enterprise", "Automation"],
-      image: "/placeholder-project.png",
-    },
-  ],
-  stack: {
-    title: "How I Work",
-    description: "I operate as an orchestrator — directing AI coding agents rather than writing every line. My infrastructure: Claude Code, git worktrees, MCP servers, Obsidian for knowledge management.",
-  },
-  cta: {
-    title: "Let's Build Something",
-    description: "I'm always exploring new tools and agent architectures.",
-    github: "https://github.com/blueif16",
-  },
-};
 
 // Header navigation
 const headerMenus = [
-  { title: "Blog", href: "/blog" },
-  { title: "Projects", href: "/projects" },
-  { title: "Notes", href: "/notes" },
-  { title: "About", href: "/about" },
+  { title: "Projects", href: "#projects" },
+  { title: "Stack", href: "#stack" },
+  { title: "GitHub", href: "https://github.com/blueif16" },
 ];
 
 // Footer navigation
 const footerMenus = [
   {
-    title: "Content",
+    title: "Projects",
     items: [
-      { title: "Blog", href: "/blog" },
-      { title: "Projects", href: "/projects" },
-      { title: "Notes", href: "/notes" },
-      { title: "Guides", href: "/guides" },
+      { title: "CloudMate", href: "https://github.com/blueif16/cloudmate" },
+      { title: "GoDag", href: "https://github.com/blueif16/godag" },
     ],
   },
   {
@@ -83,80 +38,272 @@ const footerMenus = [
   },
 ];
 
-// Prepare carousel items for projects
-const carouselItems = CONTENT.projects.map(project => ({
-  title: project.title,
-  description: `<p>${project.description}</p><p style="margin-top: 8px; font-size: 14px; color: #6A737D;">${project.tags.join(' • ')}</p>`,
-  image: project.image,
-}));
+// Infrastructure accordion items
+const infrastructureItems = [
+  {
+    question: "Claude Code + tmux",
+    answer: "Orchestrating multiple Claude Code sessions in parallel across tmux panes. Each session works in isolated git worktrees for parallel development.",
+    defaultOpen: true,
+  },
+  {
+    question: "Git Worktrees",
+    answer: "Multiple working directories from a single repo. Enables true parallel development — different branches, different features, same codebase.",
+    defaultOpen: false,
+  },
+  {
+    question: "MCP Servers",
+    answer: "Model Context Protocol servers for extending Claude with custom tools, data sources, and integrations.",
+    defaultOpen: false,
+  },
+  {
+    question: "Obsidian",
+    answer: "Second brain. Knowledge management, project notes, and documentation synced via git. Context lives here.",
+    defaultOpen: false,
+  },
+];
+
+// Infrastructure tools for marquee
+const infrastructureTools = [
+  { title: "Claude Code", image: "/assets/icons/icon-claude.svg" },
+  { title: "tmux", image: "/assets/icons/icon-tmux.svg" },
+  { title: "Git Worktrees", image: "/assets/icons/icon-git-worktree.svg" },
+  { title: "MCP Servers", image: "/assets/icons/icon-mcp.svg" },
+  { title: "Obsidian", image: "/assets/icons/icon-obsidian.svg" },
+  { title: "Neovim", image: "/assets/icons/icon-neovim.svg" },
+  { title: "FastAPI", image: "/assets/icons/icon-fastapi.svg" },
+  { title: "React", image: "/assets/icons/icon-react-tool.svg" },
+];
+
+// CloudMate project for carousel
+const cloudmateProject = [
+  {
+    title: "CloudMate",
+    description: `
+      <p>Tmux-based orchestration for parallel Claude Code sessions across git worktrees. Automated PR creation, code review pipelines, and multi-session coordination.</p>
+      <p style="margin-top: 12px; font-size: 14px; color: #059669;">Claude Code • tmux • Git Worktrees • Automation</p>
+    `,
+    image: "/assets/icons/icon-cloudmate.svg",
+  },
+];
 ---
 
 <BaseLayout title="Home">
   <StyledComponentsWrapper client:only="react">
-    <!-- Site Header -->
+    <!-- SECTION 1: Sticky Header -->
     <SiteHeader
       client:only="react"
       logo={{ logo: "/logo.svg" }}
       menus={headerMenus}
       isSticky={true}
-      showDarkModeToggle={false}
+      showDarkModeToggle={true}
     />
 
-    <!-- Hero Section -->
+    <!-- SECTION 2: Hero with 3D Fox -->
+    <div style="position: relative; padding: 120px 0 80px 0; text-align: center;">
+      <!-- 3D Fox Logo -->
+      <div style="margin-bottom: 40px;">
+        <AnimatedLogo
+          client:only="react"
+          width={200}
+          height={200}
+          followMouse={true}
+        />
+      </div>
+
+      <!-- Floating Hero Icons (positioned around fox) -->
+      <div style="position: absolute; top: 140px; left: calc(50% - 300px); width: 32px; height: 32px;">
+        <img src="/assets/icons/icon-terminal.svg" alt="Terminal" style="width: 100%; height: 100%;" />
+      </div>
+      <div style="position: absolute; top: 140px; right: calc(50% - 300px); width: 32px; height: 32px;">
+        <img src="/assets/icons/icon-code.svg" alt="Code" style="width: 100%; height: 100%;" />
+      </div>
+      <div style="position: absolute; top: 280px; left: calc(50% - 300px); width: 32px; height: 32px;">
+        <img src="/assets/icons/icon-neural.svg" alt="Neural Network" style="width: 100%; height: 100%;" />
+      </div>
+      <div style="position: absolute; top: 280px; right: calc(50% - 300px); width: 32px; height: 32px;">
+        <img src="/assets/icons/icon-rocket.svg" alt="Rocket" style="width: 100%; height: 100%;" />
+      </div>
+
+      <!-- Hero Text -->
+      <AnimatedFeatureSection
+        client:only="react"
+        headline="<h1>Building dev tools and products</h1>"
+        description="<p style='font-size: 20px;'>Creative builder. Learning every day.</p>"
+        contentAlignment="center"
+        animation={true}
+        sectionPadding="0"
+        headlineMarginTop0={true}
+      />
+    </div>
+
+    <!-- SECTION 3: Tech Stack Intro -->
+    <CallToAction
+      client:only="react"
+      headline="Four areas. One workflow."
+      description="Agent orchestration, full-stack AI, model fine-tuning, and infrastructure."
+      ctas={[
+        { text: "Explore the stack ↓", href: "#stack" }
+      ]}
+      layout="center"
+      backgroundColor="default"
+      sectionPadding="60px 0"
+    />
+
+    <!-- SECTION 4: Agent Orchestration -->
+    <div id="stack" style="padding: 80px 0;">
+      <AnimatedFeatureSection
+        client:only="react"
+        headline="<h2>Agent Orchestration</h2>"
+        description={`
+          <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 24px;">
+            <img src="/assets/icons/icon-langgraph.svg" alt="LangGraph" style="width: 64px; height: 64px;" />
+            <img src="/assets/icons/icon-multiagent.svg" alt="Multi-agent" style="width: 64px; height: 64px;" />
+            <img src="/assets/icons/icon-dag.svg" alt="DAG" style="width: 64px; height: 64px;" />
+          </div>
+          <p>Multi-agent systems with LangGraph. Designing workflows where agents coordinate, execute tasks in parallel, and handle complex pipelines.</p>
+        `}
+        contentAlignment="left"
+        animation={true}
+        sectionPadding="0"
+      />
+    </div>
+
+    <!-- SECTION 5: Full-Stack AI Integration -->
     <AnimatedFeatureSection
       client:only="react"
-      headline={`<h1>${CONTENT.name}</h1>`}
-      description={`<p style="font-size: 24px; line-height: 1.5; margin-bottom: 8px;">${CONTENT.title}</p><p style="font-size: 18px; color: #6A737D;">${CONTENT.subtitle}</p>`}
+      headline="<h2>Full-Stack AI Integration</h2>"
+      description={`
+        <div style="display: flex; gap: 16px; align-items: center; justify-content: center; margin-bottom: 24px; flex-wrap: wrap;">
+          <img src="/assets/icons/icon-react.svg" alt="React" style="width: 48px; height: 48px;" />
+          <span style="font-size: 24px; color: #059669;">→</span>
+          <img src="/assets/icons/icon-copilotkit.svg" alt="CopilotKit" style="width: 48px; height: 48px;" />
+          <span style="font-size: 24px; color: #059669;">→</span>
+          <img src="/assets/icons/icon-api.svg" alt="API" style="width: 48px; height: 48px;" />
+          <span style="font-size: 24px; color: #059669;">→</span>
+          <img src="/assets/icons/icon-agent.svg" alt="Agent" style="width: 48px; height: 48px;" />
+          <span style="font-size: 24px; color: #059669;">→</span>
+          <img src="/assets/icons/icon-result.svg" alt="Result" style="width: 48px; height: 48px;" />
+        </div>
+        <p>CopilotKit for real-time AI interactions on the frontend. FastAPI and Node.js backends that orchestrate agentic workflows. User intent flows through the entire stack.</p>
+      `}
       contentAlignment="center"
       animation={true}
-      sectionPadding="120px 0 80px 0"
-      headlineMarginTop0={true}
-    />
-
-    <!-- What I Do Section -->
-    <AnimatedFeatureSection
-      client:only="react"
-      headline={`<h2>${CONTENT.whatIDo.title}</h2>`}
-      description={`<p style="font-size: 18px; line-height: 1.6;">${CONTENT.whatIDo.description}</p>`}
-      contentAlignment="left"
-      animation={true}
       backgroundColor="gray"
       sectionPadding="80px 0"
     />
 
-    <!-- Projects Carousel -->
-    <AnimatedCarousel
-      client:only="react"
-      headline="<h2>Projects</h2>"
-      description="<p>Building tools for the AI-native development workflow.</p>"
-      featureSliderItems={carouselItems}
-      animation={true}
-      sectionPadding="80px 0"
-    />
-
-    <!-- How I Work Section -->
+    <!-- SECTION 6: Model Fine-Tuning -->
     <AnimatedFeatureSection
       client:only="react"
-      headline={`<h2>${CONTENT.stack.title}</h2>`}
-      description={`<p style="font-size: 18px; line-height: 1.6;">${CONTENT.stack.description}</p>`}
+      headline="<h2>Model Fine-Tuning</h2>"
+      description={`
+        <div style="display: flex; gap: 40px; align-items: center;">
+          <div style="flex: 1;">
+            <p>Training models, not just prompting them. Supervised fine-tuning (SFT), reinforcement learning (RL), and Unsloth for efficient training on custom datasets.</p>
+          </div>
+          <div style="flex-shrink: 0;">
+            <img src="/assets/icons/icon-training-curve.svg" alt="Training Curve" style="width: 200px; height: 150px;" />
+          </div>
+        </div>
+      `}
       contentAlignment="right"
       animation={true}
+      sectionPadding="80px 0"
+    />
+
+    <!-- SECTION 7: Infrastructure Tools Marquee -->
+    <div style="padding: 80px 0; background: var(--bg-subtle);">
+      <h2 style="text-align: center; margin-bottom: 40px; font-family: var(--font-heading); font-size: 2.5rem;">Infrastructure & Tools</h2>
+      <ContentCarousel
+        client:only="react"
+        items={infrastructureTools}
+        autoplay={true}
+        speed={3000}
+        infinite={true}
+        arrows={false}
+      />
+    </div>
+
+    <!-- SECTION 8: Infrastructure Details Accordion -->
+    <div style="padding: 80px 0;">
+      <Accordion
+        client:only="react"
+        items={infrastructureItems}
+        backgroundColor="default"
+      />
+    </div>
+
+    <!-- SECTION 9: Bold Interstitial -->
+    <FullWidthBanner
+      client:only="react"
+      headline="Learning by building. Building by learning."
+      description=""
+      ctas={[]}
+      sectionPadding="120px 0"
+      backgroundImage="/assets/pattern-geometric.svg"
+    />
+
+    <!-- SECTION 10: Projects Intro -->
+    <CallToAction
+      client:only="react"
+      headline="Projects"
+      description="Tools for the AI-native development workflow."
+      ctas={[
+        { text: "See what I've built ↓", href: "#projects" }
+      ]}
+      layout="center"
+      backgroundColor="default"
+      sectionPadding="60px 0"
+    />
+
+    <!-- SECTION 11: CloudMate Project Showcase -->
+    <div id="projects" style="padding: 80px 0;">
+      <AnimatedCarousel
+        client:only="react"
+        headline=""
+        description=""
+        featureSliderItems={cloudmateProject}
+        slideShow={false}
+        animation={true}
+        sectionPadding="0"
+      />
+    </div>
+
+    <!-- SECTION 12: CloudMate Visual Hero -->
+    <FullWidthBanner
+      client:only="react"
+      headline="Parallel development, automated workflows"
+      description=""
+      ctas={[]}
+      sectionPadding="100px 0"
+      backgroundImage="/assets/cloudmate-hero.png"
+    />
+
+    <!-- SECTION 13: More Projects Teaser -->
+    <CallToAction
+      client:only="react"
+      headline="More coming soon"
+      description="GoDag, AccessVision, OpenClaw — building in public."
+      ctas={[
+        { text: "Follow on GitHub", href: "https://github.com/blueif16", newTab: true }
+      ]}
+      layout="center"
       backgroundColor="gray"
       sectionPadding="80px 0"
     />
 
-    <!-- CTA Banner -->
+    <!-- SECTION 14: Final CTA Banner -->
     <FullWidthBanner
       client:only="react"
-      headline={CONTENT.cta.title}
-      description={CONTENT.cta.description}
+      headline="Always learning. Always building."
+      description="Exploring agent architectures, full-stack AI, and model training."
       ctas={[
-        { text: "View on GitHub", href: CONTENT.cta.github, variant: "primary", newTab: true }
+        { text: "View on GitHub", href: "https://github.com/blueif16", variant: "primary", newTab: true }
       ]}
-      sectionPadding="80px 0"
+      sectionPadding="100px 0"
     />
 
-    <!-- Site Footer -->
+    <!-- SECTION 15: Footer -->
     <SiteFooter
       client:only="react"
       menus={footerMenus}
@@ -168,11 +315,8 @@ const carouselItems = CONTENT.projects.map(project => ({
   <script>
     import { initSmoothScroll } from '../components/metamask/layout/smooth-scroll.js';
 
-    // Initialize smooth scroll on page load
     if (typeof window !== 'undefined') {
       const cleanup = initSmoothScroll();
-
-      // Cleanup on page unload
       window.addEventListener('beforeunload', cleanup);
     }
   </script>

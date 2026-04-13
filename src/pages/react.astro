@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LandingPage from '../components/LandingPage.jsx';
+---
+
+<BaseLayout title="Home">
+  <LandingPage client:only="react" />
+
+  <!-- Smooth Scroll -->
+  <script>
+    import { initSmoothScroll } from '../components/metamask/layout/smooth-scroll.js';
+
+    if (typeof window !== 'undefined') {
+      const cleanup = initSmoothScroll();
+      window.addEventListener('beforeunload', cleanup);
+    }
+  </script>
+</BaseLayout>

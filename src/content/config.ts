@@ -36,4 +36,13 @@ const til = defineCollection({
   schema: contentSchema,
 });
 
-export const collections = { blog, notes, projects, guides, til };
+const feed = defineCollection({
+  loader: glob({ pattern: '**/*-briefing.md', base: '/Users/tk/Desktop/brain/resources/briefings' }),
+  schema: z.object({
+    type: z.string().default('briefing'),
+    date: z.coerce.date(),
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = { blog, notes, projects, guides, til, feed };

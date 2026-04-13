@@ -1,0 +1,15 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tileable geometric pattern -->
+  <g opacity="0.05">
+    <circle cx="50" cy="50" r="30" stroke="#059669" stroke-width="1"/>
+    <circle cx="150" cy="50" r="30" stroke="#059669" stroke-width="1"/>
+    <circle cx="50" cy="150" r="30" stroke="#059669" stroke-width="1"/>
+    <circle cx="150" cy="150" r="30" stroke="#059669" stroke-width="1"/>
+    <line x1="50" y1="50" x2="150" y2="50" stroke="#059669" stroke-width="1"/>
+    <line x1="50" y1="150" x2="150" y2="150" stroke="#059669" stroke-width="1"/>
+    <line x1="50" y1="50" x2="50" y2="150" stroke="#059669" stroke-width="1"/>
+    <line x1="150" y1="50" x2="150" y2="150" stroke="#059669" stroke-width="1"/>
+    <line x1="50" y1="50" x2="150" y2="150" stroke="#059669" stroke-width="1"/>
+    <line x1="150" y1="50" x2="50" y2="150" stroke="#059669" stroke-width="1"/>
+  </g>
+</svg>

@@ -1,0 +1,237 @@
+---
+interface Props {
+  sections: { id: string; label: string }[];
+}
+const { sections } = Astro.props;
+---
+
+<nav class="st" id="section-tracker" aria-label="Page sections">
+
+  <div class="st-sections" id="st-sections">
+    <div class="st-rail">
+      <div class="st-rail-bg"></div>
+      <div class="st-rail-fill" id="st-progress"></div>
+    </div>
+
+    {sections.map((s, i) => (
+      <a href={`#${s.id}`} class="st-row" data-section-id={s.id} data-cursor-hover
+         style={`--i:${i}`}>
+        <span class="st-dot"></span>
+        <span class="st-label">{s.label}</span>
+      </a>
+    ))}
+  </div>
+
+</nav>
+
+<style is:global>
+  /* ── Container ── */
+  .st {
+    position: fixed;
+    left: 24px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 9989;
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+  }
+
+  .st.st-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Sections group ── */
+  .st-sections {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Rail ── */
+  /* Each .st-row: padding 13px top/bottom + 8px dot = 34px.
+     First dot center: 13 + 4 = 17px from st-sections top.
+     Last dot center:  17px from st-sections bottom. */
+  .st-rail {
+    position: absolute;
+    left: 3.5px;
+    top: 17px;
+    bottom: 17px;
+    width: 1px;
+    pointer-events: none;
+  }
+
+  .st-rail-bg {
+    position: absolute;
+    inset: 0;
+    background: rgba(58, 58, 56, 0.12);
+  }
+
+  .st-rail-fill {
+    position: absolute;
+    top: 0;
+    left: -0.5px;
+    width: 2px;
+    height: 0%;
+    background: var(--accent, #059669);
+    border-radius: 1px;
+    transition: height 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* ── Section row ── */
+  .st-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 0;
+    text-decoration: none;
+    cursor: inherit;
+  }
+
+  /* ── Dot ── */
+  .st-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(58, 58, 56, 0.28);
+    background: var(--bg, #e8e6e2);
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    transition:
+      width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      height 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.35s ease,
+      background 0.35s ease,
+      box-shadow 0.35s ease;
+  }
+
+  .st-row.st-active .st-dot {
+    width: 10px;
+    height: 10px;
+    border-color: var(--accent, #059669);
+    background: var(--accent, #059669);
+    box-shadow: 0 0 0 4px rgba(5, 150, 105, 0.15);
+  }
+
+  /* ── Label: hidden by default, slides out on hover / active ── */
+  .st-label {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(58, 58, 56, 0.45);
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-6px);
+    /* Out: fast, reverse stagger (last item fades first) */
+    transition:
+      opacity 0.2s ease calc((3 - var(--i, 0)) * 20ms),
+      transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) calc((3 - var(--i, 0)) * 20ms);
+    pointer-events: none;
+  }
+
+  .st:hover .st-label {
+    opacity: 1;
+    transform: translateX(0);
+    /* In: forward stagger */
+    transition:
+      opacity 0.28s ease calc(var(--i, 0) * 38ms),
+      transform 0.28s cubic-bezier(0.34, 1.2, 0.64, 1) calc(var(--i, 0) * 38ms);
+    pointer-events: auto;
+  }
+
+  .st-row.st-active .st-label {
+    opacity: 1;
+    transform: translateX(0);
+    color: var(--accent, #059669);
+    pointer-events: auto;
+  }
+
+  @media (max-width: 1024px) {
+    .st { display: none; }
+  }
+</style>
+
+<script>
+  (function() {
+    const tracker = document.getElementById('section-tracker');
+    const progress = document.getElementById('st-progress') as HTMLElement | null;
+    if (!tracker) return;
+
+    const rows = Array.from(tracker.querySelectorAll('.st-row'));
+    const sectionIds = rows.map(r => r.getAttribute('data-section-id'));
+    const sectionEls = sectionIds
+      .map(id => id ? document.getElementById(id) : null)
+      .filter((el): el is HTMLElement => el !== null);
+
+    if (sectionEls.length === 0) return;
+
+    const total = sectionEls.length;
+
+    // Traverse the full offsetParent chain to get absolute document top.
+    // Needed because GSAP pin wraps sections in a positioned .gsap-pin-spacer,
+    // making it the offsetParent — so plain offsetTop returns 0 for pinned sections.
+    function absoluteTop(el: HTMLElement): number {
+      let top = 0;
+      let cur: HTMLElement | null = el;
+      while (cur) {
+        top += cur.offsetTop;
+        cur = cur.offsetParent as HTMLElement | null;
+      }
+      return top;
+    }
+
+    let sectionTops: number[] = [];
+
+    function measureSections() {
+      sectionTops = sectionEls.map(absoluteTop);
+    }
+
+    let ticking = false;
+
+    function update() {
+      const scrollY = window.scrollY;
+
+      tracker!.classList.toggle('st-visible', scrollY > window.innerHeight * 0.3);
+
+      const threshold = scrollY + window.innerHeight * 0.4;
+      let activeIdx = 0;
+      sectionTops.forEach((top, i) => {
+        if (top <= threshold) activeIdx = i;
+      });
+
+      rows.forEach((row, i) => {
+        row.classList.toggle('st-active', i === activeIdx);
+      });
+
+      if (progress) {
+        const pct = total > 1 ? (activeIdx / (total - 1)) * 100 : 0;
+        progress.style.height = pct + '%';
+      }
+    }
+
+    // Measure after a short delay so GSAP has time to create pin spacers
+    setTimeout(() => {
+      measureSections();
+      update();
+    }, 300);
+
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(() => { update(); ticking = false; });
+        ticking = true;
+      }
+    }, { passive: true });
+
+    // Re-measure on resize since GSAP may recalculate pin positions
+    window.addEventListener('resize', () => {
+      measureSections();
+      update();
+    });
+  })();
+</script>

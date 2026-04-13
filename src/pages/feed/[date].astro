@@ -1,0 +1,875 @@
+---
+import { getCollection, render } from 'astro:content';
+import PortfolioLayout from '../../layouts/PortfolioLayout.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('feed');
+  return entries.map(entry => {
+    const d = new Date(entry.data.date);
+    const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+    return { params: { date: dateStr }, props: { entry } };
+  });
+}
+
+const { entry } = Astro.props;
+const { date: currentDate } = Astro.params;
+const { Content } = await render(entry);
+
+// Get all entries for the snake
+const allEntries = await getCollection('feed');
+const sortedEntries = allEntries.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+const sorted = sortedEntries.map((e, i) => {
+  const dd = new Date(e.data.date);
+  const dateStr = `${dd.getUTCFullYear()}-${String(dd.getUTCMonth()+1).padStart(2,'0')}-${String(dd.getUTCDate()).padStart(2,'0')}`;
+  const body = e.body || '';
+  const match = body.match(/##\s*重点\s*\n([\s\S]*?)(?=\n---|\n##|$)/);
+  const highlights = match
+    ? match[1].split('\n').filter((l: string) => l.trim().startsWith('-')).slice(0, 5).map((l: string) => l.replace(/^-\s*/, '').replace(/\*\*/g, ''))
+    : [];
+  return { dateStr, highlights, isHead: i === 0 };
+});
+
+const displayDate = new Date(entry.data.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+---
+
+<PortfolioLayout title={`Feed · ${currentDate}`} description="Daily briefing">
+
+<style is:global>
+  body {
+    --accent: #b04a6e;
+    --accent-dim: rgba(176, 74, 110, 0.12);
+    --card-border-hover: rgba(176, 74, 110, 0.28);
+    --card-shadow-hover: 0 12px 48px rgba(0,0,0,0.10), 0 0 0 1px rgba(176,74,110,0.12);
+  }
+
+  /* ── Main feed content ── */
+  .feed-content {
+    min-height: 100vh;
+    padding: 120px 40px 100px;
+    max-width: 780px;
+    margin: 0 auto;
+    transition: opacity 0.3s ease, filter 0.3s ease;
+  }
+
+  .feed-content.dimmed {
+    opacity: 0.4;
+    filter: blur(2px);
+  }
+
+  .feed-date-display {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.1s forwards;
+  }
+
+  .feed-heading {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 8px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.2s forwards;
+  }
+
+  .feed-heading-sub {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-bottom: 0;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.3s forwards;
+  }
+
+  .feed-rule {
+    width: 40px;
+    height: 2px;
+    background: var(--accent);
+    border: none;
+    border-radius: 1px;
+    margin: 28px 0 40px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.4s forwards;
+  }
+
+  /* ── Markdown rendered content ── */
+  .feed-body {
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.5s forwards;
+  }
+
+  .feed-body h1 {
+    display: none; /* hide the # 晨报 title since we have our own header */
+  }
+
+  .feed-body h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin: 48px 0 18px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+
+  .feed-body h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 32px 0 12px;
+    color: var(--text);
+  }
+
+  .feed-body p {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.08rem;
+    font-weight: 300;
+    line-height: 1.72;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  .feed-body ul, .feed-body ol {
+    margin: 0 0 18px 0;
+    padding-left: 20px;
+  }
+
+  .feed-body li {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-weight: 300;
+    line-height: 1.65;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+
+  .feed-body strong {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .feed-body a {
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid var(--accent-dim);
+    transition: border-color 0.2s ease;
+  }
+
+  .feed-body a:hover {
+    border-color: var(--accent);
+  }
+
+  .feed-body hr {
+    border: none;
+    height: 1px;
+    background: var(--card-border);
+    margin: 36px 0;
+  }
+
+  .feed-body blockquote {
+    border-left: 3px solid var(--accent);
+    padding: 8px 0 8px 20px;
+    margin: 20px 0;
+    color: var(--text-dim);
+  }
+
+  .feed-body code {
+    font-size: 0.88em;
+    background: var(--accent-dim);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .feed-body pre {
+    background: rgba(58,58,56,0.06);
+    padding: 16px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    margin: 18px 0;
+  }
+
+  .feed-body pre code {
+    background: none;
+    padding: 0;
+  }
+
+  .feed-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    font-size: 0.85rem;
+  }
+
+  .feed-body th {
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 8px 12px;
+    border-bottom: 2px solid var(--card-border);
+  }
+
+  .feed-body td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Snake Rail (right edge) ── */
+  .snake-rail {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 44px;
+    height: 100vh;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+
+  .snake-rail:hover {
+    background: rgba(176, 74, 110, 0.04);
+  }
+
+  .snake-rail-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    opacity: 0.5;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    font-size: 14px;
+  }
+
+  .snake-rail:hover .snake-rail-arrow {
+    opacity: 1;
+    transform: translateY(-50%) translateX(-3px);
+  }
+
+  .snake-rail-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.2;
+    transition: opacity 0.2s ease;
+  }
+
+  .snake-rail:hover .snake-rail-dot {
+    opacity: 0.5;
+  }
+
+  /* ── Snake Drawer ── */
+  .snake-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 320px;
+    height: 100vh;
+    background: #2a2a28;
+    border-left: 1px solid rgba(255,255,255,0.06);
+    z-index: 999;
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    padding: 100px 24px 40px;
+  }
+
+  .snake-drawer.open {
+    transform: translateX(0);
+  }
+
+  .snake-drawer-title {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 32px;
+  }
+
+  .snake-drawer-close {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.4);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: color 0.2s ease;
+  }
+
+  .snake-drawer-close:hover {
+    color: var(--accent);
+  }
+
+  /* ── Snake Path ── */
+  .snake-path {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* Head node (today / latest) */
+  .snake-head {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .snake-head .snake-node {
+    width: 42px;
+    height: 42px;
+    font-size: 0.56rem;
+    border: 2px solid var(--accent);
+    background: rgba(176, 74, 110, 0.12);
+    box-shadow: 0 0 12px rgba(176, 74, 110, 0.3);
+    animation: headPulse 3s ease-in-out infinite;
+  }
+
+  .snake-head .snake-node-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+
+  @keyframes headPulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(176, 74, 110, 0.2); }
+    50% { box-shadow: 0 0 20px rgba(176, 74, 110, 0.35); }
+  }
+
+  /* Vertical connector from head to first row */
+  .snake-vconnect {
+    display: flex;
+    justify-content: center;
+    height: 24px;
+  }
+
+  .snake-vconnect-line {
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to bottom, var(--accent), rgba(255,255,255,0.1));
+    border-radius: 1px;
+  }
+
+  /* Horizontal row of nodes */
+  .snake-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 0 8px;
+  }
+
+  .snake-row.rtl {
+    flex-direction: row-reverse;
+  }
+
+  /* Node */
+  .snake-node {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1.5px solid rgba(255,255,255,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .snake-node:hover {
+    border-color: var(--accent);
+    background: rgba(176, 74, 110, 0.15);
+    transform: scale(1.15);
+    box-shadow: 0 0 16px rgba(176, 74, 110, 0.25);
+  }
+
+  .snake-node.active {
+    border-color: var(--accent);
+    background: rgba(176, 74, 110, 0.2);
+  }
+
+  .snake-node-label {
+    font-size: 0.52rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.8);
+    text-align: center;
+    line-height: 1.1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .snake-node-day {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.9);
+  }
+
+  .snake-node-month {
+    display: block;
+    font-size: 0.42rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Horizontal connector between nodes */
+  .snake-hconnect {
+    flex: 1;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+    min-width: 12px;
+    border-radius: 1px;
+  }
+
+  /* Vertical connector between rows (at the end) */
+  .snake-row-vconnect {
+    display: flex;
+    height: 20px;
+    padding: 0 8px;
+  }
+
+  .snake-row-vconnect.at-end {
+    justify-content: flex-end;
+    padding-right: 26px;
+  }
+
+  .snake-row-vconnect.at-start {
+    justify-content: flex-start;
+    padding-left: 26px;
+  }
+
+  .snake-row-vconnect .snake-vconnect-line {
+    width: 2px;
+    height: 100%;
+    background: rgba(255,255,255,0.1);
+    border-radius: 1px;
+  }
+
+  /* ── Preview overlay ── */
+  .snake-preview {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-80%, -50%);
+    width: 580px;
+    max-width: calc(100vw - 400px);
+    background: rgba(245, 244, 240, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border);
+    border-radius: 18px;
+    padding: 36px 40px;
+    box-shadow: 0 32px 100px rgba(0,0,0,0.16), 0 0 0 1px rgba(176,74,110,0.08);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .snake-preview.visible {
+    opacity: 1;
+    transform: translate(-80%, -50%) translateY(0);
+  }
+
+  .snake-preview-date {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .snake-preview-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .snake-preview-list li {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    font-weight: 300;
+    line-height: 1.5;
+    color: var(--text);
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .snake-preview-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+
+  .snake-preview-empty {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    font-style: italic;
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 768px) {
+    .feed-content {
+      padding: 100px 20px 80px;
+    }
+
+    .snake-rail {
+      display: none;
+    }
+
+    .snake-drawer {
+      width: 100%;
+      top: auto;
+      bottom: 0;
+      height: 60vh;
+      border-left: none;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px 20px 0 0;
+      transform: translateY(100%);
+      padding: 24px 20px 40px;
+    }
+
+    .snake-drawer.open {
+      transform: translateY(0);
+    }
+
+    .snake-drawer-title {
+      margin-bottom: 20px;
+    }
+
+    /* Collapse snake to vertical list on mobile */
+    .snake-path { display: none; }
+
+    .snake-mobile-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .snake-mobile-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: rgba(255,255,255,0.7);
+      transition: background 0.2s ease;
+    }
+
+    .snake-mobile-item:hover,
+    .snake-mobile-item.active {
+      background: rgba(176, 74, 110, 0.15);
+    }
+
+    .snake-mobile-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.15);
+      flex-shrink: 0;
+    }
+
+    .snake-mobile-item.active .snake-mobile-dot,
+    .snake-mobile-item.head .snake-mobile-dot {
+      background: var(--accent);
+    }
+
+    .snake-mobile-date {
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .snake-preview {
+      display: none;
+    }
+
+    .mobile-snake-toggle {
+      display: flex;
+    }
+  }
+
+  @media (min-width: 769px) {
+    .snake-mobile-list { display: none; }
+    .mobile-snake-toggle { display: none; }
+  }
+
+  /* Mobile toggle button */
+  .mobile-snake-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    box-shadow: 0 4px 20px rgba(176, 74, 110, 0.3);
+    cursor: pointer;
+    font-size: 18px;
+  }
+</style>
+
+<!-- Main feed content -->
+<div class="feed-content" id="feed-content">
+  <p class="feed-date-display">{displayDate}</p>
+  <h1 class="feed-heading">Feed</h1>
+  <p class="feed-heading-sub">Daily briefing</p>
+  <hr class="feed-rule" />
+  <div class="feed-body">
+    <Content />
+  </div>
+</div>
+
+<!-- Snake rail (right edge indicator) -->
+<div class="snake-rail" id="snake-rail" data-cursor-hover>
+  <span class="snake-rail-arrow">&#9664;</span>
+  {sorted.slice(0, 8).map(() => (
+    <div class="snake-rail-dot"></div>
+  ))}
+</div>
+
+<!-- Mobile toggle -->
+<button class="mobile-snake-toggle" id="mobile-toggle" aria-label="Open archive">
+  &#9776;
+</button>
+
+<!-- Snake drawer -->
+<div class="snake-drawer" id="snake-drawer">
+  <button class="snake-drawer-close" id="snake-close" aria-label="Close">&#10005;</button>
+  <div class="snake-drawer-title">Archive</div>
+
+  <!-- Desktop: snake path -->
+  <div class="snake-path" id="snake-path">
+    {(() => {
+      const nodes = sorted;
+      const head = nodes[0];
+      const rest = nodes.slice(1);
+      const COLS = 3;
+      const rows: typeof rest[] = [];
+      for (let i = 0; i < rest.length; i += COLS) {
+        rows.push(rest.slice(i, i + COLS));
+      }
+
+      return '';
+    })()}
+
+    <!-- Head node -->
+    <div class="snake-head">
+      <a href={`/feed/${sorted[0].dateStr}`}
+         class={`snake-node ${sorted[0].dateStr === currentDate ? 'active' : ''}`}
+         data-date={sorted[0].dateStr}
+         data-highlights={JSON.stringify(sorted[0].highlights)}
+         data-cursor-hover>
+        <span class="snake-node-label">
+          <span class="snake-node-day">{parseInt(sorted[0].dateStr.split('-')[2])}</span>
+          <span class="snake-node-month">{new Date(sorted[0].dateStr + 'T00:00:00Z').toLocaleString('en', {month:'short', timeZone:'UTC'})}</span>
+        </span>
+      </a>
+    </div>
+
+    <!-- Connector from head -->
+    {sorted.length > 1 && (
+      <div class="snake-vconnect">
+        <div class="snake-vconnect-line"></div>
+      </div>
+    )}
+
+    <!-- Body rows -->
+    {(() => {
+      const rest = sorted.slice(1);
+      const COLS = 3;
+      const rowGroups: typeof rest[] = [];
+      for (let i = 0; i < rest.length; i += COLS) {
+        rowGroups.push(rest.slice(i, i + COLS));
+      }
+      return rowGroups;
+    })().map((row, rowIdx) => (
+      <>
+        <div class={`snake-row ${rowIdx % 2 === 0 ? 'ltr' : 'rtl'}`}>
+          {row.map((node, ni) => (
+            <>
+              <a href={`/feed/${node.dateStr}`}
+                 class={`snake-node ${node.dateStr === currentDate ? 'active' : ''}`}
+                 data-date={node.dateStr}
+                 data-highlights={JSON.stringify(node.highlights)}
+                 data-cursor-hover>
+                <span class="snake-node-label">
+                  <span class="snake-node-day">{parseInt(node.dateStr.split('-')[2])}</span>
+                  <span class="snake-node-month">{new Date(node.dateStr + 'T00:00:00Z').toLocaleString('en', {month:'short', timeZone:'UTC'})}</span>
+                </span>
+              </a>
+              {ni < row.length - 1 && <div class="snake-hconnect"></div>}
+            </>
+          ))}
+        </div>
+        {rowIdx < ((() => {
+          const rest = sorted.slice(1);
+          const COLS = 3;
+          return Math.ceil(rest.length / COLS);
+        })() - 1) && (
+          <div class={`snake-row-vconnect ${rowIdx % 2 === 0 ? 'at-end' : 'at-start'}`}>
+            <div class="snake-vconnect-line"></div>
+          </div>
+        )}
+      </>
+    ))}
+  </div>
+
+  <!-- Mobile: simple list -->
+  <div class="snake-mobile-list">
+    {sorted.map(node => (
+      <a href={`/feed/${node.dateStr}`}
+         class={`snake-mobile-item ${node.dateStr === currentDate ? 'active' : ''} ${node.isHead ? 'head' : ''}`}>
+        <div class="snake-mobile-dot"></div>
+        <span class="snake-mobile-date">
+          {new Date(node.dateStr + 'T00:00:00Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}
+        </span>
+      </a>
+    ))}
+  </div>
+</div>
+
+<!-- Preview overlay -->
+<div class="snake-preview" id="snake-preview">
+  <div class="snake-preview-date" id="preview-date"></div>
+  <ul class="snake-preview-list" id="preview-list"></ul>
+  <p class="snake-preview-empty" id="preview-empty" style="display:none">No preview available</p>
+</div>
+
+<script>
+  const rail = document.getElementById('snake-rail');
+  const drawer = document.getElementById('snake-drawer');
+  const closeBtn = document.getElementById('snake-close');
+  const feedContent = document.getElementById('feed-content');
+  const preview = document.getElementById('snake-preview');
+  const previewDate = document.getElementById('preview-date');
+  const previewList = document.getElementById('preview-list');
+  const previewEmpty = document.getElementById('preview-empty');
+  const mobileToggle = document.getElementById('mobile-toggle');
+  let isOpen = false;
+
+  function openDrawer() {
+    if (isOpen) return;
+    isOpen = true;
+    drawer?.classList.add('open');
+    feedContent?.classList.add('dimmed');
+    if (rail) rail.style.opacity = '0';
+  }
+
+  function closeDrawer() {
+    if (!isOpen) return;
+    isOpen = false;
+    drawer?.classList.remove('open');
+    feedContent?.classList.remove('dimmed');
+    if (rail) rail.style.opacity = '1';
+    hidePreview();
+  }
+
+  function hidePreview() {
+    preview?.classList.remove('visible');
+  }
+
+  // Rail click opens drawer
+  rail?.addEventListener('click', openDrawer);
+
+  // Right edge hover detection (last 50px)
+  document.addEventListener('mousemove', (e) => {
+    if (!isOpen && e.clientX > window.innerWidth - 50) {
+      openDrawer();
+    }
+  });
+
+  // Close on clicking dimmed content
+  feedContent?.addEventListener('click', () => {
+    if (isOpen) closeDrawer();
+  });
+
+  closeBtn?.addEventListener('click', closeDrawer);
+  mobileToggle?.addEventListener('click', () => {
+    if (isOpen) closeDrawer();
+    else openDrawer();
+  });
+
+  // Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  // Node hover → preview
+  const nodes = document.querySelectorAll<HTMLElement>('.snake-node');
+  nodes.forEach(node => {
+    node.addEventListener('mouseenter', () => {
+      const date = node.dataset.date || '';
+      const highlights: string[] = JSON.parse(node.dataset.highlights || '[]');
+
+      if (previewDate) {
+        const d = new Date(date + 'T00:00:00');
+        previewDate.textContent = d.toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+        });
+      }
+
+      if (previewList && previewEmpty) {
+        if (highlights.length > 0) {
+          previewList.innerHTML = highlights.map(h =>
+            `<li>${h.length > 200 ? h.slice(0, 200) + '…' : h}</li>`
+          ).join('');
+          previewList.style.display = '';
+          previewEmpty.style.display = 'none';
+        } else {
+          previewList.style.display = 'none';
+          previewEmpty.style.display = '';
+        }
+      }
+
+      preview?.classList.add('visible');
+    });
+
+    node.addEventListener('mouseleave', () => {
+      hidePreview();
+    });
+  });
+</script>
+
+</PortfolioLayout>

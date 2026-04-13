@@ -123,9 +123,9 @@ const SiteHeader = props => {
               className="w-icon w-icon-nav-menu"
             />
             <NavMain
-              hamburgerActive={hamburgerActive}
+              $hamburgerActive={hamburgerActive}
               ref={menuRef}
-              topMenuMobile={topMenuMobile}
+              $topMenuMobile={topMenuMobile}
             >
               <NavMainInner>
                 {menus.map((menu, index) => {
@@ -302,8 +302,8 @@ const NavMain = styled.nav`
     position: fixed;
     top: 0;
     bottom: auto;
-    margin-top: ${({ topMenuMobile }) => topMenuMobile};
-    max-height: ${({ topMenuMobile }) => `calc(100% - ${topMenuMobile})`};
+    margin-top: ${({ $topMenuMobile }) => $topMenuMobile};
+    max-height: ${({ $topMenuMobile }) => `calc(100% - ${$topMenuMobile})`};
     overflow-x: hidden;
     overflow-y: auto;
     box-shadow: 0px 6px 6px 0px rgba(0, 0, 0, 0.1);
@@ -313,8 +313,8 @@ const NavMain = styled.nav`
       box-shadow: 0px 6px 6px 0px rgba(255, 255, 255, 0.1);
     }
 
-    ${({ hamburgerActive }) =>
-      hamburgerActive
+    ${({ $hamburgerActive }) =>
+      $hamburgerActive
         ? `
       opacity: 1;
       visibility: visible;

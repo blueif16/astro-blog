@@ -1,0 +1,110 @@
+---
+// PortfolioLayout — Layout for portfolio-style pages.
+// Provides: HTML boilerplate, portfolio fonts, design tokens,
+// custom cursor, and navigation components (SiteNav, SectionTracker, PageFlyout).
+import SiteNav from '../components/navigation/SiteNav.astro';
+import SectionTracker from '../components/navigation/SectionTracker.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  sections?: { id: string; label: string }[];
+}
+
+const { title, description, sections } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+  {description && <meta name="description" content={description} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+SC:wght@300;400&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<SiteNav currentPath={Astro.url.pathname} />
+{sections && sections.length > 0 && <SectionTracker sections={sections} />}
+
+<!-- Custom cursor -->
+<div class="custom-cursor" id="cursor">
+  <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="14" cy="14" r="12" fill="url(#cg)" opacity="0.85"/>
+    <circle cx="14" cy="14" r="12" stroke="rgba(5,150,105,0.3)" stroke-width="1"/>
+    <ellipse cx="11" cy="10" rx="4" ry="3" fill="rgba(255,255,255,0.3)"/>
+    <defs><radialGradient id="cg" cx="0.4" cy="0.35" r="0.6">
+      <stop offset="0%" stop-color="#b8c5b4"/>
+      <stop offset="60%" stop-color="#8a9e82"/>
+      <stop offset="100%" stop-color="#5a6b54"/>
+    </radialGradient></defs>
+  </svg>
+</div>
+
+<slot />
+
+</body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #e8e6e2;
+    --text: #3a3a38;
+    --text-dim: rgba(58, 58, 56, 0.55);
+    --accent: #059669;
+    --accent-dim: rgba(5, 150, 105, 0.15);
+    --card-bg: rgba(245, 244, 240, 0.65);
+    --card-bg-hover: rgba(245, 244, 240, 0.9);
+    --card-border: rgba(58, 58, 56, 0.08);
+    --card-border-hover: rgba(5, 150, 105, 0.3);
+    --card-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    --card-shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(5, 150, 105, 0.15);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    color: var(--text);
+    cursor: none;
+    overflow-x: hidden;
+  }
+
+  /* ── Custom cursor ── */
+  .custom-cursor {
+    position: fixed;
+    top: 0; left: 0;
+    width: 28px; height: 28px;
+    pointer-events: none;
+    z-index: 9999;
+    will-change: transform;
+    transition: width 0.3s ease, height 0.3s ease;
+  }
+  .custom-cursor.hovering { width: 44px; height: 44px; }
+</style>
+
+<script>
+  // Custom cursor tracking + hover detection
+  const cursor = document.getElementById('cursor');
+  if (cursor) {
+    const cp = { x: -100, y: -100 };
+    const ct = { x: -100, y: -100 };
+    document.addEventListener('mousemove', e => { ct.x = e.clientX; ct.y = e.clientY; });
+    (function uc() {
+      cp.x += (ct.x - cp.x) * 0.15;
+      cp.y += (ct.y - cp.y) * 0.15;
+      cursor.style.transform = `translate(${cp.x - 14}px, ${cp.y - 14}px)`;
+      requestAnimationFrame(uc);
+    })();
+
+    // Cursor hover for all elements with data-cursor-hover
+    document.querySelectorAll('[data-cursor-hover]').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.classList.add('hovering'));
+      el.addEventListener('mouseleave', () => cursor.classList.remove('hovering'));
+    });
+  }
+</script>

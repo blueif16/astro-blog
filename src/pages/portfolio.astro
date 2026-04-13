@@ -1,0 +1,1373 @@
+---
+import PortfolioLayout from '../layouts/PortfolioLayout.astro';
+
+const sections = [
+  { id: 'intro', label: 'Intro' },
+  { id: 'stack', label: 'Stack' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'ongoing', label: 'Ongoing' },
+];
+---
+
+<PortfolioLayout title="Portfolio" sections={sections}>
+
+<style is:global>
+  /* ── Hero ── */
+  .hero {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-top {
+    padding-top: 12vh;
+    text-align: center;
+  }
+
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    opacity: 0;
+  }
+
+  .hero-sub {
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0;
+  }
+
+  .hero-quote {
+    position: absolute;
+    bottom: calc(6vh + 300px);
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    opacity: 0;
+    max-width: 480px;
+    z-index: 3;
+  }
+
+  .hero-quote blockquote {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--text);
+  }
+
+  .hero-quote cite {
+    display: block;
+    margin-top: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 500;
+    font-style: normal;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* ── Hedgehog wrapper — starts at hero bottom, moves to center via GSAP ── */
+  .hedgehog-wrapper {
+    position: absolute;
+    bottom: 6vh;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+  }
+
+  #hedgehog-canvas {
+    width: 280px; height: 280px;
+    border-radius: 50%;
+  }
+
+  #hedgehog-canvas canvas {
+    display: block;
+    width: 100% !important; height: 100% !important;
+    border-radius: 50%;
+  }
+
+  /* ── Intro section — 3-col grid, skill cards fly in from 4 directions ── */
+  .intro-section {
+    position: relative;
+    height: 250vh;
+    z-index: 3;
+    background: #f2ede4;
+  }
+
+  .intro-sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+  }
+
+  .intro-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 300px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    height: 100%;
+    padding: 40px 0;
+    box-sizing: border-box;
+    gap: 24px;
+  }
+
+  .intro-col-side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    pointer-events: auto;
+  }
+
+  .intro-col-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  /* Hedgehog anchor — GSAP positions the real hedgehog here */
+  .intro-hedge-slot {
+    width: 280px;
+    height: 280px;
+    flex-shrink: 0;
+  }
+
+  .intro-text {
+    text-align: center;
+    max-width: 300px;
+    opacity: 0;
+  }
+
+  .intro-text p {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #5a5a55;
+    font-style: italic;
+  }
+
+  /* Hover label — vertical, top-right corner of hedgehog */
+  .hedge-hover-label {
+    position: absolute;
+    top: 12px;
+    right: -8px;
+    display: flex;
+    flex-direction: row;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .hedgehog-wrapper:hover .hedge-hover-label {
+    opacity: 1;
+  }
+
+  .hedge-hover-label .intro-name {
+    font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+    font-size: 1.1rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    color: #1a1a18;
+  }
+
+  .hedge-hover-label p {
+    font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
+    font-size: 0.72rem;
+    font-weight: 300;
+    letter-spacing: 0.18em;
+    color: #5a5a55;
+    margin: 0;
+  }
+
+  .intro-text .intro-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    color: #1a1a18;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .intro-text p {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #5a5a55;
+  }
+
+  /* ── Skill cards ── */
+  .skill-card {
+    flex: 1;
+    border-radius: 20px;
+    padding: 28px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  #skill-tl { background: #2c2853; }
+  #skill-bl { background: #1d2e28; }
+  #skill-tr { background: #3d1f28; }
+  #skill-br { background: #c4614a; }
+
+  .sk-label {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 14px;
+  }
+
+  .sk-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .sk-tags span {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.2;
+  }
+
+  /* ── CharSplitter: per-character animation support ──
+     Style block is already is:global so no :global() wrappers needed. */
+  [data-splitfly] {
+    perspective: 800px;
+  }
+  .sf-char {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+  .sf-word {
+    display: inline-block;
+    white-space: nowrap;
+  }
+  .sf-space {
+    display: inline-block;
+    width: 0.3em;
+  }
+  .sf-char-cjk {
+    margin-right: 0.05em;
+  }
+
+  /* ── Projects ── */
+  .projects-section {
+    position: relative;
+    z-index: 5;
+    overflow: hidden;
+  }
+
+  .projects-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr 320px;
+    height: 100vh;
+    align-items: start;
+  }
+
+  .card-column {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .card-column.left {
+    padding: 40px 20px 80px 20px;
+    justify-self: start;
+    will-change: transform;
+  }
+
+  .card-column.right {
+    padding: 40px 20px 80px 20px;
+    justify-self: end;
+    will-change: transform;
+  }
+
+  /* Center column — hedgehog sticks here + decorative content */
+  .center-col {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .center-deco-line {
+    width: 1px;
+    height: 60px;
+    background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+    opacity: 0.3;
+    margin-top: 16px;
+  }
+
+  .center-deco-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 12px;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  #center-hedge-slot {
+    width: 280px;
+    height: 280px;
+  }
+
+  /* ── Project card ── */
+  .project-card {
+    position: relative;
+    padding: 22px 22px 18px;
+    border-radius: 16px;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--card-border);
+    box-shadow: var(--card-shadow);
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.4s ease,
+                background 0.4s ease,
+                border-color 0.4s ease,
+                box-shadow 0.4s ease;
+    overflow: hidden;
+    will-change: transform, opacity;
+  }
+
+  .project-card.card-hidden {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  .project-card:hover {
+    background: var(--card-bg-hover);
+    border-color: var(--card-border-hover);
+    box-shadow: var(--card-shadow-hover);
+    transform: translateY(-4px) scale(1.02);
+  }
+
+  .card-expand {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.5s cubic-bezier(0.4,0,0.2,1),
+                opacity 0.4s ease 0.1s,
+                margin-top 0.4s ease;
+    margin-top: 0;
+  }
+
+  .project-card:hover .card-expand {
+    max-height: 200px;
+    opacity: 1;
+    margin-top: 12px;
+  }
+
+  .card-tag {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    font-weight: 400;
+    line-height: 1.25;
+    margin-bottom: 5px;
+  }
+
+  .card-desc {
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--text-dim);
+  }
+
+  .card-expand-desc {
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: var(--text-dim);
+  }
+
+  .card-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .card-tech span {
+    font-size: 0.62rem;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(58,58,56,0.06);
+    color: var(--text-dim);
+  }
+
+  .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+    transition: gap 0.3s ease;
+  }
+  .card-link:hover { gap: 10px; }
+
+  /* ── Outro ── */
+  .outro {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding: 80px 40px;
+    position: relative;
+    z-index: 5;
+  }
+
+  .outro-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    text-align: center;
+    opacity: 0;
+  }
+
+  .outro-sub {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 420px;
+    line-height: 1.6;
+    opacity: 0;
+  }
+
+  .outro-line {
+    width: 60px; height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    opacity: 0;
+  }
+</style>
+
+<!-- The actual hedgehog — GSAP will reparent/move this -->
+<div class="hedgehog-wrapper" id="hedgehog-mover">
+  <div id="hedgehog-canvas"></div>
+  <div class="hedge-hover-label" id="hedge-hover-label">
+    <span class="intro-name">合意猬</span>
+    <p>一只有品的刺猬</p>
+  </div>
+</div>
+
+<div class="page-wrapper">
+
+  <!-- Intro: title top, hedgehog at bottom, quote above hedge -->
+  <section class="hero" id="intro">
+    <div class="hero-top">
+      <h1 class="hero-title" data-splitfly="hero-title">Building things that matter</h1>
+      <p class="hero-sub">scroll to explore</p>
+    </div>
+    <div class="hero-quote">
+      <blockquote data-splitfly="hero-quote">Have the courage to follow your heart and intuition.</blockquote>
+      <cite>Steve Jobs</cite>
+    </div>
+  </section>
+
+  <!-- Stack: hedgehog enlarged at center, tech stack cards fly in from 4 directions -->
+  <section class="intro-section" id="stack">
+    <div class="intro-sticky">
+      <div class="intro-grid">
+        <div class="intro-col-side">
+          <div class="skill-card" id="skill-tl">
+            <p class="sk-label">Languages</p>
+            <div class="sk-tags">
+              <span>TypeScript</span><span>Python</span><span>Go</span><span>Rust</span>
+            </div>
+          </div>
+          <div class="skill-card" id="skill-bl">
+            <p class="sk-label">AI & ML</p>
+            <div class="sk-tags">
+              <span>PyTorch</span><span>LangChain</span><span>Claude API</span><span>Unsloth</span>
+            </div>
+          </div>
+        </div>
+        <div class="intro-col-center">
+          <div class="intro-hedge-slot"></div>
+          <div class="intro-text" id="intro-text-1">
+            <p>These are the tech stacks that I'm familiar with</p>
+          </div>
+        </div>
+        <div class="intro-col-side">
+          <div class="skill-card" id="skill-tr">
+            <p class="sk-label">Frontend</p>
+            <div class="sk-tags">
+              <span>React</span><span>Three.js</span><span>Astro</span><span>GSAP</span>
+            </div>
+          </div>
+          <div class="skill-card" id="skill-br">
+            <p class="sk-label">Infra</p>
+            <div class="sk-tags">
+              <span>Docker</span><span>PostgreSQL</span><span>Kafka</span><span>Terraform</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Projects: left cards, center hedge, right cards -->
+  <section class="projects-section" id="projects">
+    <div class="projects-layout">
+
+      <div class="card-column left" id="col-left">
+        <div class="project-card card-hidden" data-cursor-hover data-side="left">
+          <span class="card-tag">Agent System</span>
+          <h3 class="card-title">CloudMate</h3>
+          <p class="card-desc">Tmux-based orchestration for parallel Claude Code sessions across git worktrees.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Automated PR creation, code review pipelines, and multi-session coordination.</p>
+            <div class="card-tech"><span>Claude Code</span><span>tmux</span><span>Git Worktrees</span><span>Shell</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="left">
+          <span class="card-tag">Full-Stack AI</span>
+          <h3 class="card-title">GoDag</h3>
+          <p class="card-desc">Visual DAG editor for orchestrating multi-agent workflows with real-time execution.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Drag-and-drop pipelines with per-node context and retry logic.</p>
+            <div class="card-tech"><span>React</span><span>Go</span><span>LangGraph</span><span>WebSocket</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="left">
+          <span class="card-tag">Computer Vision</span>
+          <h3 class="card-title">AccessVision</h3>
+          <p class="card-desc">Real-time accessibility scanner using smartphone cameras.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Fine-tuned YOLOv8 for stairs, narrow doorways, missing ramps.</p>
+            <div class="card-tech"><span>PyTorch</span><span>YOLOv8</span><span>FastAPI</span><span>React Native</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="left">
+          <span class="card-tag">Infrastructure</span>
+          <h3 class="card-title">MCP Hub</h3>
+          <p class="card-desc">Registry and runtime for MCP servers with hot-reload and auth.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Central control plane. Monitor, permissions, deploy without restarts.</p>
+            <div class="card-tech"><span>Node.js</span><span>MCP</span><span>Docker</span><span>SQLite</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="left">
+          <span class="card-tag">ML Training</span>
+          <h3 class="card-title">FineTuner</h3>
+          <p class="card-desc">One-command fine-tuning pipeline for LLMs with auto dataset prep.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Wraps Unsloth + LoRA. Auto-generates training data from codebase.</p>
+            <div class="card-tech"><span>Python</span><span>Unsloth</span><span>LoRA</span><span>Wandb</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="center-col">
+        <div id="center-hedge-slot"></div>
+        <div class="center-deco-line"></div>
+        <span class="center-deco-label">projects</span>
+      </div>
+
+      <div class="card-column right" id="col-right">
+        <div class="project-card card-hidden" data-cursor-hover data-side="right">
+          <span class="card-tag">Dream Analysis</span>
+          <h3 class="card-title">DreamRAG</h3>
+          <p class="card-desc">AI dream interpretation powered by Jung, Freud, and 10k dreamers.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">RAG over dream symbol databases with archetypal analysis.</p>
+            <div class="card-tech"><span>Next.js</span><span>Three.js</span><span>LangChain</span><span>Pinecone</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="right">
+          <span class="card-tag">Developer Tool</span>
+          <h3 class="card-title">OpenClaw</h3>
+          <p class="card-desc">Git-native code review that understands your codebase context.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Reads CLAUDE.md, commit history. Architectural feedback, not lint.</p>
+            <div class="card-tech"><span>TypeScript</span><span>Claude API</span><span>Git</span><span>CLI</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="right">
+          <span class="card-tag">Data Pipeline</span>
+          <h3 class="card-title">StreamForge</h3>
+          <p class="card-desc">Real-time data transformation engine with visual flow builder.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Node-based editor. For teams who outgrew Zapier but don't need Airflow.</p>
+            <div class="card-tech"><span>Rust</span><span>React</span><span>Kafka</span><span>gRPC</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="right">
+          <span class="card-tag">Obsidian Plugin</span>
+          <h3 class="card-title">SecondBrain Sync</h3>
+          <p class="card-desc">Bidirectional sync between Obsidian and your AI agent's memory.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Notes become context. Agent discoveries become notes.</p>
+            <div class="card-tech"><span>TypeScript</span><span>Obsidian API</span><span>MCP</span><span>SQLite</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+        <div class="project-card card-hidden" data-cursor-hover data-side="right">
+          <span class="card-tag">Automation</span>
+          <h3 class="card-title">DeployPilot</h3>
+          <p class="card-desc">Zero-config deployment agent. Reads repo, provisions infra.</p>
+          <div class="card-expand">
+            <p class="card-expand-desc">Detects stack, Dockerfile, CI/CD. Rollback, canary, blue-green.</p>
+            <div class="card-tech"><span>Go</span><span>Docker</span><span>Terraform</span><span>GitHub Actions</span></div>
+            <a href="#" class="card-link">View project <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M1.5 7h11M8.5 3l4 4-4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Ongoing -->
+  <section class="outro" id="ongoing">
+    <div class="outro-line"></div>
+    <h2 class="outro-title" data-splitfly="outro-title">In the Works</h2>
+    <p class="outro-sub" data-splitfly="outro-sub">DreamRAG, OpenClaw, and a few things not ready to name yet.</p>
+  </section>
+
+</div>
+
+<script>
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+  import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+  import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Cursor tracking + hover handled by PortfolioLayout
+  const cards = document.querySelectorAll('.project-card');
+
+  // ── Three.js ──
+  const cntr = document.getElementById('hedgehog-canvas');
+  const ren = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  ren.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  ren.setSize(280, 280);
+  ren.toneMapping = THREE.ACESFilmicToneMapping;
+  ren.toneMappingExposure = 1.2;
+  ren.setClearColor(0x000000, 0);
+  cntr.appendChild(ren.domElement);
+
+  const sc = new THREE.Scene();
+  const pmrem = new THREE.PMREMGenerator(ren);
+  const env = new RoomEnvironment();
+  sc.environment = pmrem.fromScene(env, 0.04).texture;
+  env.dispose();
+
+  const dl = new THREE.DirectionalLight(0xffffff, 1.5);
+  dl.position.set(5, 10, 7); sc.add(dl);
+  const fl = new THREE.DirectionalLight(0xb0c4de, 0.8);
+  fl.position.set(-5, 3, -5); sc.add(fl);
+  sc.add(new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 1.0));
+
+  const cam = new THREE.PerspectiveCamera(35, 1, 0.1, 1000);
+  cam.position.set(0, 30, 120);
+  const oc = new OrbitControls(cam, ren.domElement);
+  oc.enableDamping = true; oc.dampingFactor = 0.08;
+  oc.enablePan = false; oc.enableZoom = false; oc.enableRotate = false;
+  oc.target.set(0, 0, 0); oc.update();
+
+  const mouse = { x: 0, y: 0 };
+  const tRot = { x: 0, y: 0 };
+  let hm = null, hoveredCard = null;
+
+  document.addEventListener('mousemove', e => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  });
+  cards.forEach(c => {
+    c.addEventListener('mouseenter', () => { hoveredCard = c; });
+    c.addEventListener('mouseleave', () => { hoveredCard = null; });
+  });
+
+  let hScale = 1;
+  new GLTFLoader().load('/Hedgehog.glb', gltf => {
+    hm = gltf.scene;
+    const box = new THREE.Box3().setFromObject(hm);
+    const cen = box.getCenter(new THREE.Vector3());
+    const sz = box.getSize(new THREE.Vector3());
+    hScale = 60 / Math.max(sz.x, sz.y, sz.z);
+    hm.scale.setScalar(hScale);
+    hm.position.sub(cen.multiplyScalar(hScale));
+    hm.scale.setScalar(0.001);
+    sc.add(hm);
+    gsap.to(hm.scale, {
+      x: hScale, y: hScale, z: hScale,
+      duration: 1.2, ease: 'elastic.out(1, 0.5)', delay: 0.3,
+    });
+  });
+
+  (function anim() {
+    requestAnimationFrame(anim);
+    if (hm) {
+      if (hoveredCard) {
+        // Look directly at the hovered card
+        const cardRect = hoveredCard.getBoundingClientRect();
+        const hedgeRect = cntr.getBoundingClientRect();
+        const hedgeCX = hedgeRect.left + hedgeRect.width / 2;
+        const hedgeCY = hedgeRect.top + hedgeRect.height / 2;
+        const cardCX = cardRect.left + cardRect.width / 2;
+        const cardCY = cardRect.top + cardRect.height / 2;
+        const dx = cardCX - hedgeCX;
+        const dy = cardCY - hedgeCY;
+        // Normalize to roughly -1..1 range based on screen dimensions
+        const nx = Math.max(-1, Math.min(1, dx / (window.innerWidth * 0.4)));
+        const ny = Math.max(-1, Math.min(1, dy / (window.innerHeight * 0.4)));
+        tRot.y = nx * 0.8;
+        tRot.x = ny * 0.4;
+      } else {
+        // Idle: gentle follow mouse
+        tRot.y = mouse.x * 0.25;
+        tRot.x = -mouse.y * 0.3;
+      }
+      hm.rotation.y += (tRot.y - hm.rotation.y) * 0.08;
+      hm.rotation.x += (tRot.x - hm.rotation.x) * 0.08;
+    }
+    oc.update();
+    ren.render(sc, cam);
+  })();
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CharSplitter — reusable per-character scroll animation framework
+  // ══════════════════════════════════════════════════════════════════════════
+  //
+  // USAGE:
+  //   1. Add `data-splitfly="unique-id"` to any text element in HTML.
+  //   2. Call `splitElement(el)` to split its text into per-char spans.
+  //      Returns { el, chars, words } for animation.
+  //   3. Use `buildFlyInTimeline(chars, trajectories)` /
+  //      `buildFlyOutTimeline(chars, trajectories)` to build GSAP timelines,
+  //      or use `splitFlyScroll(el, opts)` for full scroll-driven
+  //      fly-in → hold → fly-out sequences.
+  //
+  // Each char gets a seeded random trajectory so animations look organic
+  // but are deterministic across reloads. Trajectory direction is based on
+  // char's position relative to the element center — left chars fly left, etc.
+  //
+  // PRESETS (pass to computeTrajectories):
+  //   'radial'  — chars explode outward from center (default)
+  //   'rise'    — chars float upward with slight horizontal drift
+  //   'fall'    — chars tumble downward
+  //   'scatter' — pure random in all directions
+  //
+  // EXAMPLE (minimal):
+  //   <h2 data-splitfly="my-title">Hello World</h2>
+  //   const el = document.querySelector('[data-splitfly="my-title"]');
+  //   splitFlyScroll(el, {
+  //     trigger: '#my-section',
+  //     start: 'top 80%',
+  //     end: 'bottom 20%',
+  //     preset: 'radial',
+  //   });
+  //
+  // EXAMPLE (manual control):
+  //   const { chars } = splitElement(el);
+  //   const trajs = computeTrajectories(chars, 'rise', 1.5);
+  //   const tl = buildFlyInTimeline(chars, trajs);
+  //   ScrollTrigger.create({ trigger: el, scrub: 1, animation: tl });
+  //
+  // ──────────────────────────────────────────────────────────────────────────
+
+  /** Deterministic pseudo-random from a seed (mulberry32). */
+  function seededRandom(seed) {
+    let t = seed + 0x6D2B79F5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  }
+
+  /**
+   * Split a DOM element's text into per-character <span>s.
+   * Groups characters into word wrappers for natural line-breaking.
+   * @param {HTMLElement} el — element with data-splitfly
+   * @returns {{ el, chars: HTMLElement[], words: HTMLElement[] }}
+   */
+  // Detect CJK characters (Chinese/Japanese/Korean)
+  const CJK_RE = /[\u3000-\u9FFF\uF900-\uFAFF\u{20000}-\u{2FA1F}]/u;
+
+  function splitElement(el) {
+    const text = el.textContent;
+    el.innerHTML = '';
+    el.style.opacity = '1';
+
+    const chars = [];
+    const words = [];
+    const segments = text.split(/(\s+)/);
+
+    segments.forEach(seg => {
+      if (/^\s+$/.test(seg)) {
+        const sp = document.createElement('span');
+        sp.className = 'sf-space';
+        el.appendChild(sp);
+      } else {
+        const wordEl = document.createElement('span');
+        wordEl.className = 'sf-word';
+        for (const ch of seg) {
+          const span = document.createElement('span');
+          span.className = CJK_RE.test(ch) ? 'sf-char sf-char-cjk' : 'sf-char';
+          span.textContent = ch;
+          wordEl.appendChild(span);
+          chars.push(span);
+        }
+        el.appendChild(wordEl);
+        words.push(wordEl);
+      }
+    });
+
+    return { el, chars, words };
+  }
+
+  /**
+   * Compute per-char fly targets based on preset.
+   * @param {HTMLElement[]} chars
+   * @param {'radial'|'rise'|'fall'|'scatter'} preset
+   * @param {number} intensity — distance multiplier (default 1)
+   * @returns {Array<{x,y,z,rotation,scale}>}
+   */
+  function computeTrajectories(chars, preset = 'radial', intensity = 1) {
+    const count = chars.length;
+    const mid = (count - 1) / 2;
+
+    return chars.map((_, i) => {
+      const seed = i * 2654435761;
+      const r1 = seededRandom(seed);
+      const r2 = seededRandom(seed + 1);
+      const r3 = seededRandom(seed + 2);
+      const norm = (i - mid) / Math.max(mid, 1); // -1 to 1
+
+      switch (preset) {
+        case 'radial': {
+          const angle = norm * Math.PI * 0.6 + (r1 - 0.5) * 0.8;
+          const dist = (80 + r2 * 120) * intensity;
+          return {
+            x: Math.cos(angle) * dist * (norm < 0 ? -1 : 1),
+            y: (r3 - 0.5) * 80 * intensity - 30 * intensity,
+            z: (r1 - 0.3) * 150 * intensity,
+            rotation: norm * 45 * intensity + (r2 - 0.5) * 30,
+            scale: 0.3 + r3 * 0.4,
+          };
+        }
+        case 'rise':
+          return {
+            x: norm * 40 * intensity + (r1 - 0.5) * 30,
+            y: -(60 + r2 * 80) * intensity,
+            z: (r1 - 0.5) * 60 * intensity,
+            rotation: (r3 - 0.5) * 20 * intensity,
+            scale: 0.5 + r1 * 0.3,
+          };
+        case 'fall':
+          return {
+            x: norm * 50 * intensity + (r1 - 0.5) * 40,
+            y: (60 + r2 * 100) * intensity,
+            z: (r3 - 0.5) * 80 * intensity,
+            rotation: norm * 35 * intensity,
+            scale: 0.4 + r2 * 0.3,
+          };
+        case 'scatter':
+        default:
+          return {
+            x: (r1 - 0.5) * 300 * intensity,
+            y: (r2 - 0.5) * 200 * intensity,
+            z: (r3 - 0.5) * 200 * intensity,
+            rotation: (r1 - 0.5) * 90 * intensity,
+            scale: 0.2 + r2 * 0.5,
+          };
+      }
+    });
+  }
+
+  /**
+   * GSAP timeline: chars fly FROM scattered TO assembled (readable).
+   * @param {HTMLElement[]} chars
+   * @param {Object[]} trajectories — from computeTrajectories()
+   * @param {{ stagger?: number, ease?: string }} opts
+   */
+  function buildFlyInTimeline(chars, trajectories, opts = {}) {
+    const { stagger = 0.02, ease = 'power3.out' } = opts;
+    const tl = gsap.timeline();
+    chars.forEach((ch, i) => {
+      const t = trajectories[i];
+      tl.fromTo(ch,
+        { x: t.x, y: t.y, z: t.z, rotation: t.rotation, scale: t.scale, opacity: 0 },
+        { x: 0, y: 0, z: 0, rotation: 0, scale: 1, opacity: 1, ease, duration: 1 },
+        i * stagger
+      );
+    });
+    return tl;
+  }
+
+  /**
+   * GSAP timeline: chars fly FROM assembled TO scattered.
+   * @param {HTMLElement[]} chars
+   * @param {Object[]} trajectories — from computeTrajectories()
+   * @param {{ stagger?: number, ease?: string }} opts
+   */
+  function buildFlyOutTimeline(chars, trajectories, opts = {}) {
+    const { stagger = 0.02, ease = 'power3.in' } = opts;
+    const tl = gsap.timeline();
+    chars.forEach((ch, i) => {
+      const t = trajectories[i];
+      tl.to(ch,
+        { x: t.x, y: t.y, z: t.z, rotation: t.rotation, scale: t.scale, opacity: 0, ease, duration: 1 },
+        i * stagger
+      );
+    });
+    return tl;
+  }
+
+  /**
+   * Full scroll-driven split-fly: fly-in → hold → fly-out.
+   *
+   * @param {HTMLElement} el — element with data-splitfly
+   * @param {object} opts
+   * @param {string}  opts.trigger   — ScrollTrigger trigger (default: el itself)
+   * @param {string}  opts.start     — ST start (default 'top 80%')
+   * @param {string}  opts.end       — ST end (default 'bottom 20%')
+   * @param {string}  opts.preset    — trajectory preset (default 'radial')
+   * @param {number}  opts.intensity — fly distance multiplier (default 1)
+   * @param {string}  opts.inPreset  — override preset for fly-in only
+   * @param {string}  opts.outPreset — override preset for fly-out only
+   * @param {number}  opts.holdRatio — fraction of scroll spent holding (0-1, default 0.3)
+   * @returns {{ chars, words, masterTl }}
+   */
+  function splitFlyScroll(el, opts = {}) {
+    const {
+      trigger,
+      start = 'top 80%',
+      end = 'bottom 20%',
+      preset = 'radial',
+      intensity = 1,
+      inPreset,
+      outPreset,
+      holdRatio = 0.3,
+    } = opts;
+
+    const { chars, words } = splitElement(el);
+    const inTrajs = computeTrajectories(chars, inPreset || preset, intensity);
+    const outTrajs = computeTrajectories(chars, outPreset || preset, intensity);
+
+    // Master timeline: [fly-in] [hold gap] [fly-out]
+    const masterTl = gsap.timeline({
+      scrollTrigger: {
+        trigger: trigger || el,
+        start,
+        end,
+        scrub: 1.5,
+      }
+    });
+
+    masterTl.add(buildFlyInTimeline(chars, inTrajs), 0);
+    masterTl.add(buildFlyOutTimeline(chars, outTrajs), `>${holdRatio}`);
+
+    return { chars, words, masterTl };
+  }
+
+  /**
+   * Avoidance-based text split: chars repel away from a fixed element
+   * (e.g. the hedgehog) as they scroll past it, arcing around it like
+   * water flowing around a rock.
+   *
+   * How it works:
+   *   - Pre-measures each char's resting x/y offset within the element.
+   *   - On every scroll frame, computes each char's viewport position
+   *     vs. the avoidance element's center.
+   *   - Chars within `radius` get pushed outward along the radial
+   *     direction, with an optional tangential arc component.
+   *   - Uses gsap.set() for 60fps performance (no tweens, instant).
+   *
+   * USAGE:
+   *   splitAvoid(el, {
+   *     avoidEl: document.getElementById('hedgehog-mover'),
+   *     radius: 200,      // influence zone in px
+   *     strength: 140,     // max displacement in px
+   *     arc: true,         // add tangential flow (chars curve around)
+   *     fadeEdge: 0.3,     // opacity at max proximity (0 = invisible)
+   *   });
+   *
+   * @param {HTMLElement} el — text element to split
+   * @param {object} opts
+   * @param {HTMLElement} opts.avoidEl   — element to avoid (center used)
+   * @param {number}  opts.radius        — influence radius in px (default 200)
+   * @param {number}  opts.strength      — max push distance in px (default 140)
+   * @param {boolean} opts.arc           — tangential arc flow (default true)
+   * @param {number}  opts.fadeEdge      — min opacity at closest point (default 0.3)
+   * @param {string}  opts.trigger       — ScrollTrigger trigger (default: el)
+   * @returns {{ chars, update, kill }}
+   */
+  function splitAvoid(el, opts = {}) {
+    const {
+      avoidEl,
+      radius = 200,
+      strength = 140,
+      arc = true,
+      fadeEdge = 0.3,
+      trigger,
+    } = opts;
+
+    const { chars, words } = splitElement(el);
+
+    // Pre-measure each char's resting position relative to element's top-left.
+    // Must wait one frame for layout after splitElement rewrites innerHTML.
+    let charOffsets = null;
+
+    function measureChars() {
+      const elRect = el.getBoundingClientRect();
+      charOffsets = chars.map(ch => {
+        const r = ch.getBoundingClientRect();
+        return {
+          // Center of char relative to element's top-left
+          relX: (r.left + r.width / 2) - elRect.left,
+          relY: (r.top + r.height / 2) - elRect.top,
+        };
+      });
+    }
+
+    function update() {
+      if (!charOffsets) {
+        measureChars();
+      }
+
+      const avoidRect = avoidEl.getBoundingClientRect();
+      const aCX = avoidRect.left + avoidRect.width / 2;
+      const aCY = avoidRect.top + avoidRect.height / 2;
+      const elRect = el.getBoundingClientRect();
+
+      chars.forEach((ch, i) => {
+        const off = charOffsets[i];
+        // Char's current viewport center (before any transform)
+        const charVX = elRect.left + off.relX;
+        const charVY = elRect.top + off.relY;
+
+        const dx = charVX - aCX;
+        const dy = charVY - aCY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < radius && dist > 0.1) {
+          const factor = 1 - (dist / radius);    // 1 at center → 0 at edge
+          const eased = factor * factor;          // quadratic ease — smooth falloff
+          const angle = Math.atan2(dy, dx);
+
+          let pushX, pushY;
+          if (arc) {
+            // Radial push + tangential sweep = chars arc around the obstacle
+            const tangent = angle + Math.PI / 2 * (dx >= 0 ? 1 : -1);
+            pushX = Math.cos(angle) * strength * eased
+                  + Math.cos(tangent) * strength * 0.35 * eased;
+            pushY = Math.sin(angle) * strength * eased
+                  + Math.sin(tangent) * strength * 0.35 * eased;
+          } else {
+            // Pure radial push — chars split straight outward
+            pushX = Math.cos(angle) * strength * eased;
+            pushY = Math.sin(angle) * strength * eased;
+          }
+
+          gsap.set(ch, {
+            x: pushX,
+            y: pushY,
+            rotation: eased * (dx >= 0 ? 18 : -18),
+            opacity: 1 - eased * (1 - fadeEdge),
+            scale: 1 - eased * 0.15,
+          });
+        } else {
+          // Outside influence — snap back to resting position
+          gsap.set(ch, { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1 });
+        }
+      });
+    }
+
+    const st = ScrollTrigger.create({
+      trigger: trigger || el,
+      start: 'top bottom',
+      end: 'bottom top',
+      onUpdate: update,
+    });
+
+    // Also run update on resize (char positions change)
+    const onResize = () => { charOffsets = null; };
+    window.addEventListener('resize', onResize);
+
+    return {
+      chars,
+      words,
+      update,
+      kill: () => { st.kill(); window.removeEventListener('resize', onResize); },
+    };
+  }
+
+  // ══════════════════════════════════════════════
+  // Page animations
+  // ══════════════════════════════════════════════
+
+  const hedgeMover = document.getElementById('hedgehog-mover');
+
+  // ── Hero title: chars assemble on load, fly out on scroll ──
+  const heroTitleEl = document.querySelector('[data-splitfly="hero-title"]');
+  const heroTitleSplit = splitElement(heroTitleEl);
+  const heroTitleTrajs = computeTrajectories(heroTitleSplit.chars, 'scatter', 1.2);
+
+  // Load entrance: scatter → assemble
+  heroTitleSplit.chars.forEach((ch, i) => {
+    const t = heroTitleTrajs[i];
+    gsap.fromTo(ch,
+      { x: t.x * 0.5, y: t.y * 0.5, rotation: t.rotation * 0.5, opacity: 0, scale: 0.6 },
+      { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1,
+        duration: 1.2, ease: 'power3.out', delay: 0.15 + i * 0.025 }
+    );
+  });
+
+  // Fly out when leaving hero
+  const heroOutTl = buildFlyOutTimeline(heroTitleSplit.chars, heroTitleTrajs, { stagger: 0.015, ease: 'power2.in' });
+  ScrollTrigger.create({
+    trigger: '#intro',
+    start: 'bottom 70%',
+    end: 'bottom 20%',
+    scrub: 1,
+    animation: heroOutTl,
+  });
+
+  // ── Hero quote: load in, chars rise away on scroll ──
+  const heroQuoteEl = document.querySelector('[data-splitfly="hero-quote"]');
+  const heroQuoteSplit = splitElement(heroQuoteEl);
+  const heroQuoteTrajs = computeTrajectories(heroQuoteSplit.chars, 'rise', 0.6);
+
+  gsap.fromTo('.hero-quote', { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'power3.out', delay: 0.9 });
+
+  const quoteOutTl = buildFlyOutTimeline(heroQuoteSplit.chars, heroQuoteTrajs, { stagger: 0.008, ease: 'power2.in' });
+  ScrollTrigger.create({
+    trigger: '#intro',
+    start: 'bottom 85%',
+    end: 'bottom 25%',
+    scrub: 1,
+    animation: quoteOutTl,
+  });
+
+  gsap.to('.hero-sub', { opacity: 1, y: 0, duration: 1, ease: 'power3.out', delay: 0.5 });
+
+  // ── Hedgehog movement: hero bottom → screen center ──
+  ScrollTrigger.create({
+    trigger: '#stack',
+    start: 'top bottom',
+    end: 'top top',
+    scrub: 1,
+    onUpdate: (self) => {
+      const p = self.progress;
+      const startBottom = window.innerHeight * 0.06;
+      const endY = window.innerHeight * 0.5 - 185;
+      const startY = window.innerHeight - startBottom - 280;
+      const currentY = startY + (endY - startY) * p;
+      hedgeMover.style.position = 'fixed';
+      hedgeMover.style.bottom = 'auto';
+      hedgeMover.style.top = currentY + 'px';
+      hedgeMover.style.left = '50%';
+      hedgeMover.style.transform = 'translateX(-50%)';
+    }
+  });
+
+  // Keep hedgehog visible through projects section.
+  // The projects section is pinned (+3000px scroll), so we tie to the
+  // pin's own ScrollTrigger end by using the same trigger + end value.
+  ScrollTrigger.create({
+    trigger: '#projects',
+    start: 'top top',
+    end: '+=3000',
+    onLeave: () => {
+      gsap.to(hedgeMover, { opacity: 0, duration: 0.5 });
+    },
+    onEnterBack: () => {
+      gsap.to(hedgeMover, { opacity: 1, duration: 0.3 });
+    },
+  });
+
+  // ── Intro: hedgehog scales up as section enters (stays big) ──
+  gsap.to('#hedgehog-canvas', {
+    scale: 1.29,
+    transformOrigin: 'center center',
+    ease: 'none',
+    scrollTrigger: {
+      trigger: '#stack',
+      start: 'top 70%',
+      end: 'top top',
+      scrub: 1,
+    }
+  });
+
+  // ── Stack text: fade in when section is visible ──
+  gsap.to('#intro-text-1', {
+    opacity: 1,
+    duration: 0.8,
+    ease: 'power3.out',
+    scrollTrigger: {
+      trigger: '#stack',
+      start: 'top 40%',
+      toggleActions: 'play none none reverse',
+    }
+  });
+
+  // ── Skill cards: start off-screen in 4 directions ──
+  gsap.set('#skill-tl', { x: -420, opacity: 0 });
+  gsap.set('#skill-tr', { y: -420, opacity: 0 });
+  gsap.set('#skill-bl', { y: 420, opacity: 0 });
+  gsap.set('#skill-br', { x: 420, opacity: 0 });
+
+  // Cards fly in as section enters
+  const cardsInTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#stack',
+      start: 'top 55%',
+      end: 'top top',
+      scrub: 1,
+    }
+  });
+  cardsInTl
+    .to('#skill-tl', { x: 0, opacity: 1, ease: 'power2.out' }, 0)
+    .to('#skill-tr', { y: 0, opacity: 1, ease: 'power2.out' }, 0.05)
+    .to('#skill-bl', { y: 0, opacity: 1, ease: 'power2.out' }, 0.1)
+    .to('#skill-br', { x: 0, opacity: 1, ease: 'power2.out' }, 0.15);
+
+  // Cards fly out in reverse as section exits toward projects
+  const cardsOutTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#stack',
+      start: 'bottom 75%',
+      end: 'bottom 25%',
+      scrub: 1,
+    }
+  });
+  cardsOutTl
+    .to('#skill-tl', { x: -420, opacity: 0, ease: 'power2.in' }, 0)
+    .to('#skill-tr', { y: -420, opacity: 0, ease: 'power2.in' }, 0.05)
+    .to('#skill-bl', { y: 420, opacity: 0, ease: 'power2.in' }, 0.1)
+    .to('#skill-br', { x: 420, opacity: 0, ease: 'power2.in' }, 0.15);
+
+  // ── Cards ──
+  cards.forEach(c => c.classList.remove('card-hidden'));
+
+  // Measure columns + viewport
+  const colLeft = document.getElementById('col-left');
+  const colRight = document.getElementById('col-right');
+  const vh = window.innerHeight;
+  const leftH = colLeft.offsetHeight;
+  const rightH = colRight.offsetHeight;
+
+  // Initial positions: left fully above viewport, right fully below
+  gsap.set(colLeft, { y: -leftH });
+  gsap.set(colRight, { y: vh });
+
+  const projectsTl = gsap.timeline({
+    scrollTrigger: {
+      trigger: '#projects',
+      start: 'top top',
+      end: '+=3000',
+      scrub: 1,
+      pin: true,
+    }
+  });
+
+  // Left: enters from TOP, slides DOWN through and out bottom
+  projectsTl.to(colLeft, { y: vh, ease: 'none' }, 0);
+
+  // Right: enters from BOTTOM, slides UP through and out top
+  projectsTl.to(colRight, { y: -rightH, ease: 'none' }, 0);
+
+  // Per-card fade-in
+  cards.forEach(card => {
+    gsap.fromTo(card,
+      { opacity: 0, scale: 0.95 },
+      { opacity: 1, scale: 1, duration: 0.6, ease: 'power2.out',
+        scrollTrigger: {
+          trigger: card,
+          start: 'top 90%',
+          toggleActions: 'play none none reverse',
+        },
+      }
+    );
+  });
+
+  // ── Outro: chars assemble from scattered positions ──
+  gsap.to('.outro-line', {
+    opacity: 1, duration: 0.8, ease: 'power3.out',
+    scrollTrigger: { trigger: '#ongoing', start: 'top 70%', toggleActions: 'play none none reverse' },
+  });
+
+  // Outro title — chars fall in from above
+  const outroTitleEl = document.querySelector('[data-splitfly="outro-title"]');
+  const outroSplit = splitElement(outroTitleEl);
+  const outroTrajs = computeTrajectories(outroSplit.chars, 'fall', 1);
+  const outroInTl = buildFlyInTimeline(outroSplit.chars, outroTrajs, { stagger: 0.03, ease: 'power3.out' });
+  ScrollTrigger.create({
+    trigger: '#ongoing',
+    start: 'top 65%',
+    end: 'top 35%',
+    scrub: 1,
+    animation: outroInTl,
+  });
+
+  // Outro subtitle — gentle rise-in
+  const outroSubEl = document.querySelector('[data-splitfly="outro-sub"]');
+  const outroSubSplit = splitElement(outroSubEl);
+  const outroSubTrajs = computeTrajectories(outroSubSplit.chars, 'rise', 0.6);
+  const outroSubTl = buildFlyInTimeline(outroSubSplit.chars, outroSubTrajs, { stagger: 0.02, ease: 'power3.out' });
+  ScrollTrigger.create({
+    trigger: '#ongoing',
+    start: 'top 55%',
+    end: 'top 25%',
+    scrub: 1,
+    animation: outroSubTl,
+  });
+</script>
+
+</PortfolioLayout>
