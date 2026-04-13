@@ -23,3 +23,11 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 .vercel
+
+# automation & task artifacts
+.playwright-mcp/
+.tasks/
+*.png
+
+# local site copies
+website/
