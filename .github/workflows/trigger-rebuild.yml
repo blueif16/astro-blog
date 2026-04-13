@@ -1,0 +1,27 @@
+# ─────────────────────────────────────────────────────────────────────
+# Add this workflow to your PRIVATE briefings repo (e.g. blueif16/brain)
+# NOT to the astro-blog repo.
+#
+# Setup:
+#   1. In Vercel → astro-blog project → Settings → Git → Deploy Hooks
+#      → Create hook (name: "briefing-push", branch: "main")
+#      → Copy the URL
+#   2. In GitHub → brain repo → Settings → Secrets → Actions
+#      → Add secret: VERCEL_DEPLOY_HOOK = <the URL from step 1>
+# ─────────────────────────────────────────────────────────────────────
+
+name: Trigger Vercel Rebuild
+
+on:
+  push:
+    paths:
+      - 'resources/briefings/**'
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Vercel deploy hook
+        run: |
+          curl -s -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+          echo "Deploy triggered"

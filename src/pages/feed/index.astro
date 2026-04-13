@@ -2,11 +2,20 @@
 import { getCollection } from 'astro:content';
 
 const entries = await getCollection('feed');
-const sorted = entries.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
-const latest = sorted[0];
+let target = '/';
 
-const d = new Date(latest.data.date);
-const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-
-return Astro.redirect(`/feed/${dateStr}`);
+if (entries.length) {
+  const sorted = entries.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
+  const d = new Date(sorted[0].data.date);
+  const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+  target = `/feed/${dateStr}`;
+}
 ---
+<html>
+<head>
+  <meta http-equiv="refresh" content={`0;url=${target}`} />
+  <link rel="canonical" href={target} />
+  <meta name="robots" content="noindex" />
+</head>
+<body></body>
+</html>

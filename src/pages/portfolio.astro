@@ -33,7 +33,6 @@ const sections = [
     font-weight: 400;
     letter-spacing: -0.02em;
     margin-bottom: 12px;
-    opacity: 0;
   }
 
   .hero-sub {
@@ -249,6 +248,43 @@ const sections = [
     font-weight: 400;
     color: rgba(255, 255, 255, 0.82);
     line-height: 1.2;
+  }
+
+  /* ── Matter underline + vocab blobs ── */
+  .matter-word {
+    position: relative;
+    cursor: default;
+  }
+
+  .matter-word::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--accent, #c4614a);
+    border-radius: 1px;
+  }
+
+  .vocab-blob {
+    position: absolute;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: rgba(196, 97, 74, 0.06);
+    color: rgba(196, 97, 74, 0.8);
+    border: 1px solid rgba(196, 97, 74, 0.12);
+    pointer-events: none;
+    opacity: 0;
+    will-change: transform, opacity;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    white-space: nowrap;
+    z-index: 2;
   }
 
   /* ── CharSplitter: per-character animation support ──
@@ -500,9 +536,16 @@ const sections = [
   <!-- Intro: title top, hedgehog at bottom, quote above hedge -->
   <section class="hero" id="intro">
     <div class="hero-top">
-      <h1 class="hero-title" data-splitfly="hero-title">Building things that matter</h1>
+      <h1 class="hero-title">Building things that <span class="matter-word" id="matter-trigger">matter</span></h1>
       <p class="hero-sub">scroll to explore</p>
     </div>
+
+    <div class="vocab-blob" style="top: 32%; left: 8%;">craft</div>
+    <div class="vocab-blob" style="top: 26%; right: 9%;">purpose</div>
+    <div class="vocab-blob" style="top: 48%; left: 18%;">impact</div>
+    <div class="vocab-blob" style="top: 42%; right: 15%;">detail</div>
+    <div class="vocab-blob" style="top: 55%; right: 28%;">soul</div>
+
     <div class="hero-quote">
       <blockquote data-splitfly="hero-quote">Have the courage to follow your heart and intuition.</blockquote>
       <cite>Steve Jobs</cite>
@@ -1154,29 +1197,44 @@ const sections = [
 
   const hedgeMover = document.getElementById('hedgehog-mover');
 
-  // ── Hero title: chars assemble on load, fly out on scroll ──
-  const heroTitleEl = document.querySelector('[data-splitfly="hero-title"]');
-  const heroTitleSplit = splitElement(heroTitleEl);
-  const heroTitleTrajs = computeTrajectories(heroTitleSplit.chars, 'scatter', 1.2);
+  // ── "matter" underline + vocab blob hover ──
+  const matterWord = document.getElementById('matter-trigger');
+  const blobs = document.querySelectorAll('.vocab-blob');
+  let blobFloatTweens = [];
 
-  // Load entrance: scatter → assemble
-  heroTitleSplit.chars.forEach((ch, i) => {
-    const t = heroTitleTrajs[i];
-    gsap.fromTo(ch,
-      { x: t.x * 0.5, y: t.y * 0.5, rotation: t.rotation * 0.5, opacity: 0, scale: 0.6 },
-      { x: 0, y: 0, rotation: 0, opacity: 1, scale: 1,
-        duration: 1.2, ease: 'power3.out', delay: 0.15 + i * 0.025 }
-    );
+  matterWord.addEventListener('mouseenter', () => {
+    blobFloatTweens.forEach(tw => tw.kill());
+    blobFloatTweens = [];
+
+    blobs.forEach((blob, i) => {
+      const rect = blob.getBoundingClientRect();
+      const fromLeft = rect.left < window.innerWidth / 2;
+      gsap.fromTo(blob,
+        { opacity: 0, scale: 0.5, x: fromLeft ? -25 : 25, y: 12 },
+        {
+          opacity: 1, scale: 1, x: 0, y: 0,
+          duration: 0.55, ease: 'back.out(1.4)', delay: i * 0.07,
+          onComplete: () => {
+            const tw = gsap.to(blob, {
+              y: -6, duration: 1.8 + i * 0.3, ease: 'sine.inOut',
+              yoyo: true, repeat: -1,
+            });
+            blobFloatTweens.push(tw);
+          }
+        }
+      );
+    });
   });
 
-  // Fly out when leaving hero
-  const heroOutTl = buildFlyOutTimeline(heroTitleSplit.chars, heroTitleTrajs, { stagger: 0.015, ease: 'power2.in' });
-  ScrollTrigger.create({
-    trigger: '#intro',
-    start: 'bottom 70%',
-    end: 'bottom 20%',
-    scrub: 1,
-    animation: heroOutTl,
+  matterWord.addEventListener('mouseleave', () => {
+    blobFloatTweens.forEach(tw => tw.kill());
+    blobFloatTweens = [];
+    blobs.forEach((blob, i) => {
+      gsap.to(blob, {
+        opacity: 0, scale: 0.8, y: -8,
+        duration: 0.3, ease: 'power2.in', delay: i * 0.03,
+      });
+    });
   });
 
   // ── Hero quote: load in, chars rise away on scroll ──
@@ -1245,16 +1303,30 @@ const sections = [
     }
   });
 
-  // ── Stack text: fade in when section is visible ──
-  gsap.to('#intro-text-1', {
-    opacity: 1,
-    duration: 0.8,
-    ease: 'power3.out',
-    scrollTrigger: {
-      trigger: '#stack',
-      start: 'top 40%',
-      toggleActions: 'play none none reverse',
-    }
+  // ── Stack text: show when section visible, fade out on any scroll past ──
+  const introTextEl = document.getElementById('intro-text-1');
+  const stackSection = document.getElementById('stack');
+
+  ScrollTrigger.create({
+    trigger: stackSection,
+    start: 'top top',
+    end: 'bottom bottom',
+    onUpdate: (self) => {
+      // progress 0 = just entered, 1 = scrolled through all 250vh
+      // Show at 0, fade out quickly as soon as user scrolls
+      const p = self.progress;
+      if (p < 0.05) {
+        // First 5% — fully visible
+        introTextEl.style.opacity = '1';
+      } else if (p < 0.15) {
+        // 5%–15% — fade out
+        introTextEl.style.opacity = String(1 - (p - 0.05) / 0.1);
+      } else {
+        introTextEl.style.opacity = '0';
+      }
+    },
+    onEnter: () => { introTextEl.style.opacity = '1'; },
+    onLeaveBack: () => { introTextEl.style.opacity = '0'; },
   });
 
   // ── Skill cards: start off-screen in 4 directions ──

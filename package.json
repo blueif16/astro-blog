@@ -12,6 +12,7 @@
     "@astrojs/react": "^4.4.2",
     "@astrojs/rss": "^4.0.15",
     "@astrojs/vercel": "^9.0.4",
+    "@chenglou/pretext": "^0.0.5",
     "@metamask/logo": "^3.1.2",
     "@studio-freight/hamo": "^0.6.33",
     "@studio-freight/lenis": "^1.0.42",

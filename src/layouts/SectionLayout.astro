@@ -13,8 +13,9 @@ const { title, description, count } = Astro.props;
 <PortfolioLayout title={title} description={description}>
 
 <style is:global>
-  /* ── Section page: warm amber accent ── */
+  /* ── Section page: warm amber accent, cool stone bg ── */
   body {
+    --bg: #e5e6e3;
     --accent: #b85c14;
     --accent-dim: rgba(184, 92, 20, 0.12);
     --card-border-hover: rgba(184, 92, 20, 0.28);

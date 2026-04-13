@@ -1,10 +1,10 @@
 ---
 import PostLayout from '../../layouts/PostLayout.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 
 export async function getStaticPaths() {
-  const sections = ['blog', 'notes', 'projects', 'guides', 'til'];
+  const sections = ['blog'];
 
   const paths = await Promise.all(
     sections.map(async (section) => {
@@ -23,12 +23,12 @@ export async function getStaticPaths() {
 }
 
 type Props = {
-  entry: CollectionEntry<'blog'> | CollectionEntry<'notes'> | CollectionEntry<'projects'> | CollectionEntry<'guides'> | CollectionEntry<'til'>;
+  entry: CollectionEntry<'blog'>;
   section: string;
 };
 
 const { entry, section } = Astro.props;
-const { Content } = await entry.render();
+const { Content } = await render(entry);
 ---
 
 <PostLayout

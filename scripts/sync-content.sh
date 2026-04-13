@@ -20,7 +20,8 @@ git clone --depth 1 --filter=blob:none --sparse \
 cd "$TEMP_DIR"
 git sparse-checkout set publish
 
-rm -rf "$CONTENT_DIR"/*
+# Remove only content subdirectories (preserve config.ts, github-loader.ts, etc.)
+find "$CONTENT_DIR" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
 
 for section in "$TEMP_DIR"/publish/*/; do
   if [ -d "$section" ]; then

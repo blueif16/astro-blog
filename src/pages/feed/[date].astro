@@ -30,16 +30,52 @@ const sorted = sortedEntries.map((e, i) => {
 });
 
 const displayDate = new Date(entry.data.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+
+// Extract h2 headings from markdown body for the section tracker
+const body = entry.body || '';
+const h2Regex = /^##\s+(.+)$/gm;
+const sections: { id: string; label: string }[] = [];
+let h2Match;
+while ((h2Match = h2Regex.exec(body)) !== null) {
+  const label = h2Match[1].trim();
+  const id = 'feed-' + label.replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+  sections.push({ id, label });
+}
 ---
 
-<PortfolioLayout title={`Feed · ${currentDate}`} description="Daily briefing">
+<PortfolioLayout title={`Feed · ${currentDate}`} description="Daily briefing" sections={sections}>
 
 <style is:global>
   body {
+    --bg: #e9e8e3;
     --accent: #b04a6e;
     --accent-dim: rgba(176, 74, 110, 0.12);
     --card-border-hover: rgba(176, 74, 110, 0.28);
     --card-shadow-hover: 0 12px 48px rgba(0,0,0,0.10), 0 0 0 1px rgba(176,74,110,0.12);
+  }
+
+  /* ── SectionTracker overrides for CJK labels ── */
+  .st-label {
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+  }
+  .st-dot {
+    width: 9px;
+    height: 9px;
+  }
+  .st-row.st-active .st-dot {
+    width: 11px;
+    height: 11px;
+  }
+
+  /* ── Selection ── */
+  .feed-content ::selection {
+    background: rgba(176, 74, 110, 0.18);
+    color: inherit;
+  }
+  .feed-content ::-moz-selection {
+    background: rgba(176, 74, 110, 0.18);
+    color: inherit;
   }
 
   /* ── Main feed content ── */
@@ -232,48 +268,36 @@ const displayDate = new Date(entry.data.date).toLocaleDateString('en-US', { week
     position: fixed;
     top: 0;
     right: 0;
-    width: 44px;
+    width: 36px;
     height: 100vh;
     z-index: 1000;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
     cursor: pointer;
     transition: background 0.3s ease;
   }
 
   .snake-rail:hover {
-    background: rgba(176, 74, 110, 0.04);
+    background: rgba(176, 74, 110, 0.05);
   }
 
-  .snake-rail-arrow {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
+  .snake-rail-label {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
     color: var(--accent);
-    opacity: 0.5;
-    transition: opacity 0.3s ease, transform 0.3s ease;
-    font-size: 14px;
+    opacity: 0.35;
+    transition: opacity 0.3s ease, letter-spacing 0.3s ease;
+    user-select: none;
   }
 
-  .snake-rail:hover .snake-rail-arrow {
-    opacity: 1;
-    transform: translateY(-50%) translateX(-3px);
-  }
-
-  .snake-rail-dot {
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: var(--accent);
-    opacity: 0.2;
-    transition: opacity 0.2s ease;
-  }
-
-  .snake-rail:hover .snake-rail-dot {
-    opacity: 0.5;
+  .snake-rail:hover .snake-rail-label {
+    opacity: 0.8;
+    letter-spacing: 0.24em;
   }
 
   /* ── Snake Drawer ── */
@@ -663,10 +687,7 @@ const displayDate = new Date(entry.data.date).toLocaleDateString('en-US', { week
 
 <!-- Snake rail (right edge indicator) -->
 <div class="snake-rail" id="snake-rail" data-cursor-hover>
-  <span class="snake-rail-arrow">&#9664;</span>
-  {sorted.slice(0, 8).map(() => (
-    <div class="snake-rail-dot"></div>
-  ))}
+  <span class="snake-rail-label">Archive</span>
 </div>
 
 <!-- Mobile toggle -->
@@ -870,6 +891,25 @@ const displayDate = new Date(entry.data.date).toLocaleDateString('en-US', { week
       hidePreview();
     });
   });
+
+
+</script>
+
+<!-- Inline script: runs synchronously before module scripts (SectionTracker) -->
+<script is:inline>
+  (function() {
+    // Assign IDs to rendered h2s so SectionTracker can find them
+    var fb = document.querySelector('.feed-body');
+    if (!fb) return;
+    fb.querySelectorAll('h2').forEach(function(h2) {
+      var text = (h2.textContent || '').trim();
+      h2.id = 'feed-' + text.replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '').toLowerCase();
+    });
+
+    // Show SectionTracker immediately (no hero to scroll past on feed pages)
+    var st = document.getElementById('section-tracker');
+    if (st) st.classList.add('st-visible');
+  })();
 </script>
 
 </PortfolioLayout>

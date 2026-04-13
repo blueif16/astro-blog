@@ -4,7 +4,7 @@ import PostCard from '../../components/PostCard.astro';
 import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
-  const sections = ['blog', 'notes', 'projects', 'guides', 'til'];
+  const sections = ['blog'];
   return sections.map(section => ({ params: { section } }));
 }
 
@@ -16,10 +16,6 @@ const posts = (await getCollection(section as any))
 
 const sectionTitles: Record<string, string> = {
   blog: 'Blog',
-  notes: 'Notes',
-  projects: 'Projects',
-  guides: 'Guides',
-  til: 'Today I Learned',
 };
 
 // Group by year

@@ -18,8 +18,9 @@ const { title, description, date, tags = [], content, section } = Astro.props;
 <PortfolioLayout title={title} description={description}>
 
 <style is:global>
-  /* ── Post page: muted violet accent ── */
+  /* ── Post page: muted violet accent, warm reading bg ── */
   body {
+    --bg: #e5e7e2;
     --accent: #6d5aac;
     --accent-dim: rgba(109, 90, 172, 0.12);
     --card-border-hover: rgba(109, 90, 172, 0.28);

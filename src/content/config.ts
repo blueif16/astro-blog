@@ -1,7 +1,7 @@
 import { defineCollection, z } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { githubLoader } from './github-loader';
 
-// Shared schema for all sections
 const contentSchema = z.object({
   title: z.string(),
   date: z.coerce.date(),
@@ -10,34 +10,19 @@ const contentSchema = z.object({
   draft: z.boolean().default(false),
 });
 
-// Each folder under publish/ becomes a collection
 const blog = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/blog' }),
   schema: contentSchema,
 });
 
-const notes = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/notes' }),
-  schema: contentSchema,
-});
-
-const projects = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/projects' }),
-  schema: contentSchema,
-});
-
-const guides = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/guides' }),
-  schema: contentSchema,
-});
-
-const til = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/til' }),
-  schema: contentSchema,
-});
-
 const feed = defineCollection({
-  loader: glob({ pattern: '**/*-briefing.md', base: '/Users/tk/Desktop/brain/resources/briefings' }),
+  loader: githubLoader({
+    repo: import.meta.env.VAULT_REPO || 'blueif16/brain',
+    path: 'resources/briefings',
+    pattern: /.*-briefing\.md$/,
+    token: import.meta.env.VAULT_TOKEN || '',
+    branch: 'main',
+  }),
   schema: z.object({
     type: z.string().default('briefing'),
     date: z.coerce.date(),
@@ -45,4 +30,4 @@ const feed = defineCollection({
   }),
 });
 
-export const collections = { blog, notes, projects, guides, til, feed };
+export const collections = { blog, feed };
