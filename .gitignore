@@ -31,3 +31,6 @@ pnpm-debug.log*
 
 # local site copies
 website/
+
+# keep migrated blog post images (override the *.png rule above)
+!public/blog/**
