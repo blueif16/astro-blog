@@ -5,7 +5,7 @@
     "description": "",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:20:56.889Z",
-    "changedAt": "2026-11-04T07:23:51.436Z",
+    "changedAt": "2026-11-04T16:42:49.578Z",
     "moments": [
       {
         "id": "map",
@@ -45,7 +45,7 @@
     "description": "A skill and a studio that teach your coding agent to make a web app feel like an app on phones. Shared by link: no app store, no separate mobile site.",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:14:36.815Z",
-    "changedAt": "2026-11-02T01:14:36.815Z",
+    "changedAt": "2026-11-04T16:38:58.615Z",
     "moments": [
       {
         "id": "hero",
@@ -129,7 +129,7 @@
     "description": "A gallery of short video clips your agents can search and save to projects.",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:14:09.963Z",
-    "changedAt": "2026-11-04T07:19:55.159Z",
+    "changedAt": "2026-11-04T16:42:50.233Z",
     "moments": [
       {
         "id": "home",
@@ -204,7 +204,7 @@
     "description": "",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:21:50.081Z",
-    "changedAt": "2026-11-04T15:53:36.963Z",
+    "changedAt": "2026-11-04T16:41:40.912Z",
     "moments": [
       {
         "id": "canal-sunset",
@@ -379,7 +379,7 @@
     "description": "Describe a game. Omni Game builds a real, playable game in one pass.",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:15:00.115Z",
-    "changedAt": "2026-11-04T07:21:11.684Z",
+    "changedAt": "2026-11-04T16:43:41.636Z",
     "moments": [
       {
         "id": "home",
@@ -443,7 +443,7 @@
     "description": "Agent teams with cool UI: channels of long-running agents you can walk away from.",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:15:24.843Z",
-    "changedAt": "2026-11-04T07:30:12.018Z",
+    "changedAt": "2026-11-04T16:44:21.106Z",
     "moments": [
       {
         "id": "home",
@@ -560,7 +560,7 @@
     "description": "",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:17:50.978Z",
-    "changedAt": "2026-11-04T07:31:54.688Z",
+    "changedAt": "2026-11-04T16:45:48.435Z",
     "moments": [
       {
         "id": "home",
@@ -635,7 +635,7 @@
     "description": "A self-designing, durable, self-improving agent orchestration substrate. Describe the goal; an agent designs the graph, a fleet of sealed full-agent nodes runs it, and a learning loop makes it better every run.",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:18:02.981Z",
-    "changedAt": "2026-11-04T07:22:33.170Z",
+    "changedAt": "2026-11-04T16:46:33.579Z",
     "moments": [
       {
         "id": "home",
@@ -699,7 +699,7 @@
     "description": "",
     "year": 2026,
     "firstCapturedAt": "2026-11-02T01:19:10.745Z",
-    "changedAt": "2026-11-04T07:25:15.738Z",
+    "changedAt": "2026-11-04T16:46:44.170Z",
     "moments": [
       {
         "id": "atlas",
