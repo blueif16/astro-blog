@@ -1,0 +1,68 @@
+{
+  "features": {
+    "title": "A clip shelf for coding agents",
+    "intro": "VAS is a library of short motion clips, each one technique rebuilt from a well-made video. You browse and fill a cart. Your coding agent connects over MCP, reads each clip's technique and builds the video from them.",
+    "items": [
+      {
+        "name": "Search",
+        "text": "Type what the video is for, or pick a suggestion like Tech promo. Matching clips fill the page, and one button adds them all to the cart.",
+        "shot": "search"
+      },
+      {
+        "name": "Clip notes",
+        "text": "A clip opens over the page. Details says what happens in it, why it feels premium, and when to use or avoid it. Copy prompt writes your agent a request to use it.",
+        "shot": "clip"
+      },
+      {
+        "name": "Cart",
+        "text": "Clips go into a cart without signing in, and the cart suggests others to go with them. Copy for your agent turns it into a prompt listing the clip IDs and asking for one film.",
+        "shot": "cart"
+      },
+      {
+        "name": "Agent setup",
+        "text": "One button copies a line for your coding agent, which then adds VAS as an MCP server. After one browser sign-in, the agent has eleven tools to search clips and save them to projects.",
+        "shot": "docs"
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "search",
+      "name": "Search",
+      "device": "desktop",
+      "steps": [{ "click": "button:has-text(\"Tech promo\")", "wait": 4000 }]
+    },
+    {
+      "id": "clip",
+      "name": "A clip",
+      "device": "desktop",
+      "steps": [
+        { "click": "a[href^=\"/clips/\"]", "wait": 2500 },
+        { "click": "button:has-text(\"Details\")", "wait": 1500 }
+      ]
+    },
+    {
+      "id": "cart",
+      "name": "Cart",
+      "device": "desktop",
+      "steps": [
+        { "click": "button[aria-label=\"Add to cart\"]", "wait": 1200 },
+        { "click": ":nth-match(button[aria-label=\"Add to cart\"], 2)", "wait": 1200 },
+        { "click": ":nth-match(button[aria-label=\"Add to cart\"], 3)", "wait": 1200 },
+        { "click": "header button:has-text(\"Cart\")", "wait": 1500 }
+      ]
+    },
+    {
+      "id": "docs",
+      "name": "Connect an agent",
+      "device": "desktop",
+      "steps": [{ "click": "header a[href=\"/docs\"]", "wait": 2000 }]
+    }
+  ],
+  "sources": [
+    "https://vas.infinityopus.com/",
+    "https://vas.infinityopus.com/docs",
+    "https://vas.infinityopus.com/get-started.md",
+    "https://vas.infinityopus.com/snippets"
+  ]
+}

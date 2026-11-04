@@ -1,0 +1,63 @@
+{
+  "features": {
+    "title": "Describe a game, or let the page help",
+    "intro": "Omni Game builds a playable browser game from a written description. The page is built around one prompt box at the bottom. The other controls help fill that box, and a separate index shows games it has already made.",
+    "items": [
+      {
+        "name": "Describe it",
+        "text": "A sentence in the prompt box is enough to start a build, which the site says takes about 20 minutes. A screenshot of a game or character can be attached as a reference."
+      },
+      {
+        "name": "Game kinds",
+        "text": "Eight kinds of game, such as Platformer and Grid Puzzle, scroll past as cards. Tapping one lifts it and shows its controls, and Use as basis pins it to the prompt box.",
+        "shot": "kinds"
+      },
+      {
+        "name": "Idea chooser",
+        "text": "Ideas opens a two-page chooser: a base and who plays, then setting, hero, vibe and twist, which Spin fills at random unless locked. Every pick lands in the prompt box as a removable chip.",
+        "shot": "ideas"
+      },
+      {
+        "name": "Games built",
+        "text": "See what others built opens an index of games the engine has made. Picking a title loads it into a frame next to the list, ready to play.",
+        "shot": "gallery"
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "kinds",
+      "name": "Game kinds",
+      "device": "desktop",
+      "steps": [
+        { "click": "#howto-btn", "wait": 1200 },
+        { "click": "#tip-cta", "wait": 1800 },
+        { "click": ":nth-match(.rail-card, 3)", "wait": 1200 }
+      ]
+    },
+    {
+      "id": "ideas",
+      "name": "Idea chooser",
+      "device": "desktop",
+      "steps": [
+        { "click": "#ideas-btn", "wait": 1500 },
+        { "click": "#arch-list > *", "wait": 900 },
+        { "click": ":nth-match(#style-list > *, 2)", "wait": 900 },
+        { "click": "#page-next", "wait": 1200 },
+        { "click": "#forge-spin", "wait": 2500 }
+      ]
+    },
+    {
+      "id": "gallery",
+      "name": "Games built",
+      "device": "desktop",
+      "steps": [{ "click": "#others-btn", "wait": 3500 }]
+    }
+  ],
+  "sources": [
+    "https://gallery-navy-chi.vercel.app/",
+    "https://gallery-navy-chi.vercel.app/css/base.css",
+    "https://gallery-navy-chi.vercel.app/bg.css",
+    "https://gallery-navy-chi.vercel.app/gallery"
+  ]
+}

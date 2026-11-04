@@ -1,53 +1,86 @@
 ---
-import SectionLayout from '../../layouts/SectionLayout.astro';
-import PostCard from '../../components/PostCard.astro';
+// A section of writing (/blog): every post as a row on the golden columns, newest first, grouped
+// by year. Title on the left, date and reading time in the narrow column, the opening lines on
+// the right.
+import JournalLayout from '../../layouts/JournalLayout.astro';
 import { getCollection } from 'astro:content';
+import { excerpt, fmtDay, fmtDayShort, readingMinutes, tidy } from '../../utils/journal';
 
 export async function getStaticPaths() {
   const sections = ['blog'];
-  return sections.map(section => ({ params: { section } }));
+  return sections.map((section) => ({ params: { section } }));
 }
 
 const { section } = Astro.params;
 
-const posts = (await getCollection(section as any))
-  .filter(post => !post.data.draft)
-  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
-
 const sectionTitles: Record<string, string> = {
   blog: 'Blog',
 };
+const name = sectionTitles[section!] ?? section!;
 
-// Group by year
-const postsByYear = posts.reduce((acc, post) => {
-  const year = post.data.date.getFullYear().toString();
-  if (!acc[year]) acc[year] = [];
-  acc[year].push(post);
-  return acc;
-}, {} as Record<string, typeof posts>);
+const posts = (await getCollection(section as 'blog'))
+  .filter((post) => !post.data.draft)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
-const years = Object.keys(postsByYear).sort((a, b) => Number(b) - Number(a));
+const byYear = new Map<number, typeof posts>();
+for (const post of posts) {
+  const year = post.data.date.getUTCFullYear();
+  byYear.set(year, [...(byYear.get(year) ?? []), post]);
+}
+const years = [...byYear.keys()].sort((a, b) => b - a);
+const latest = posts[0];
 ---
 
-<SectionLayout title={sectionTitles[section!]} description={`All posts in ${sectionTitles[section!]}`} count={posts.length}>
-  <div class="post-list">
-    {years.map(year => (
-      <div class="year-group">
-        <div class="year-label">{year}</div>
-        {postsByYear[year].map(post => {
-          const words = (post.body || '').trim().split(/\s+/).length;
-          const readingTime = Math.ceil(words / 200);
+<JournalLayout title={`${name}, Shiran Wang`} description={`Every post in ${name}.`} area="blog">
+  <header class="j-head phi">
+    <div class="cell a">
+      <h1 class="j-title">{name}</h1>
+    </div>
+    <div class="cell b col">
+      <p class="kicker">Years</p>
+      <ul class="j-jump">
+        {years.map((y) => <li><a href={`#y${y}`}>{y}</a></li>)}
+      </ul>
+    </div>
+    <div class="cell c col">
+      <dl class="meta">
+        <div><dt>Posts</dt><dd>{posts.length}</dd></div>
+        {latest && <div><dt>Latest</dt><dd><a href={`/${section}/${latest.id}`}>{fmtDay(latest.data.date)}</a></dd></div>}
+        <div><dt>Also</dt><dd><a href="/feed">Feed, a daily briefing</a></dd></div>
+      </dl>
+    </div>
+  </header>
+
+  {posts.length === 0 && (
+    <section class="phi j-group-head">
+      <p class="cell a kicker">Nothing here yet.</p>
+    </section>
+  )}
+
+  {years.map((year) => (
+    <section class="j-group" id={`y${year}`} aria-labelledby={`y${year}-label`}>
+      <div class="phi j-group-head">
+        <h2 class="cell a j-group-label" id={`y${year}-label`}>{year}</h2>
+        <p class="cell b kicker">{byYear.get(year)!.length} {byYear.get(year)!.length === 1 ? 'post' : 'posts'}</p>
+      </div>
+      <ol class="j-list">
+        {byYear.get(year)!.map((post) => {
+          const described = tidy(post.data.description);
+          const lede = described.length > 12 ? described : excerpt(post.body);
           return (
-            <PostCard
-              title={post.data.title}
-              date={post.data.date}
-              section={section!}
-              slug={post.id}
-              readingTime={readingTime}
-            />
+            <li>
+              <a class="phi j-row" href={`/${section}/${post.id}`}>
+                <span class="cell a"><span class="j-row-title">{post.data.title}</span></span>
+                <span class="cell b j-row-meta">
+                  <time datetime={post.data.date.toISOString()}>{fmtDayShort(post.data.date)}</time>
+                  <span>{readingMinutes(post.body)} min read</span>
+                </span>
+                <span class="cell c">{lede && <span class="j-row-text">{lede}</span>}</span>
+              </a>
+            </li>
           );
         })}
-      </div>
-    ))}
-  </div>
-</SectionLayout>
+      </ol>
+    </section>
+  ))}
+</JournalLayout>

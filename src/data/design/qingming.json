@@ -1,0 +1,86 @@
+{
+  "features": {
+    "title": "Walk through the scroll, then open it",
+    "intro": "清明上河圖, the Song dynasty handscroll, is built here as a 3D town you can walk through in the browser, phones included. Every painted thing stands where the scroll puts it, measured from the brush strokes, and all 811 painted people are there.",
+    "items": [
+      {
+        "name": "Walk the scroll",
+        "text": "The scroll's eight sections join into one walk. Click the street, then walk with WASD in first or third person, or press C to lift the camera into a circle overhead.",
+        "shot": "street"
+      },
+      {
+        "name": "Open the painting",
+        "text": "Space swaps the street for the scroll itself, centred on where you stand. You show as a small figure on a red seal, and the painted people within 15 m are boxed.",
+        "shot": "painting"
+      },
+      {
+        "name": "Overheard talk",
+        "text": "Painted people speak in short lines of period speech, taken from readings of the painting and shown on paper slips over their heads. Near some of them, E starts a conversation."
+      },
+      {
+        "name": "Change the hour",
+        "text": "The town's hour is the visitor's own clock. Dragging the small scroll of sky at top left sets another hour, and the sun and shadows follow.",
+        "shot": "sunset"
+      }
+    ]
+  },
+  "places": {
+    "title": "From the countryside into the city",
+    "intro": "Frames from the world, in the scroll's order, east to west. The names and lines are the ones the game's journal of places (圖志) gives them.",
+    "items": [
+      {
+        "name": "隋堤煙柳 Willows on the Sui Embankment",
+        "text": "“The old willows on the bank are called the Sui Embankment.” At dawn a party comes home from sweeping graves, willow and flowers on the sedan's roof.",
+        "shot": "willows"
+      },
+      {
+        "name": "汴河 The Bian Canal",
+        "text": "Morning on the canal: boats moored along the bank, and one sculled past on the west reach.",
+        "shot": "canal"
+      },
+      {
+        "name": "虹橋 The Rainbow Bridge",
+        "text": "“The bridge has no piers, like a flying rainbow.” Seen from above in the afternoon, with boats moored under the arch.",
+        "shot": "bridge"
+      },
+      {
+        "name": "On the crown",
+        "text": "The crowd on top of the bridge, seen from where the painter looked. A man leans over the rail and shouts down to the big boat lowering its mast below.",
+        "shot": "crown"
+      },
+      {
+        "name": "街頭說書 The Street Storyteller",
+        "text": "“The storyteller tells a tale; the listeners ring round him.” Inside the city, in front of Sun Yang's butcher shop.",
+        "shot": "storyteller"
+      },
+      {
+        "name": "孫羊正店 Sun Yang's Main Tavern",
+        "text": "“One of the capital's main taverns, with a festive gate tower.” At noon, with sedans waiting at its door.",
+        "shot": "tavern"
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "painting",
+      "name": "The painting",
+      "steps": [
+        {
+          "press": "Space",
+          "wait": 5000
+        }
+      ]
+    }
+  ],
+  "sources": [
+    "qingming/README.md",
+    "qingming/CLAUDE.md",
+    "qingming/gen/ui/STYLE.md",
+    "qingming/web/src/scroll_hud.js",
+    "qingming/web/src/ui/time.js",
+    "https://github.com/blueif16/qingming",
+    "https://qingming.infinityopus.com/",
+    "qingming/web/public/assets/ui/places.json",
+    "ae_playground/projects/qingming-promo/capture/shots/*.json"
+  ]
+}

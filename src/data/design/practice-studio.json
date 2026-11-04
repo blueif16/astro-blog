@@ -1,0 +1,29 @@
+{
+  "features": {
+    "title": "Rehearse a talk with a coach and clock",
+    "intro": "Practice Studio is for rehearsing a talk before a set date. A coach reads your notes or deck, drafts the story for you to approve and plans the practice. Each rep is then timed while you speak.",
+    "items": [
+      {
+        "name": "Coach chat",
+        "text": "Paste notes or drop a .pptx, .pdf, .md or .txt file, and give the event, time limit and date. The coach answers in the chat and updates the cards beside it.",
+        "shot": "home"
+      },
+      {
+        "name": "Next rep",
+        "text": "A card shows the next rep, with its number, drill, time limit and one instruction, and sometimes a tip below. A sample 3-minute demo is loaded, so Record works on the first visit.",
+        "shot": "phone"
+      },
+      {
+        "name": "Live rep",
+        "text": "Record counts down and turns the screen dark. Depending on the drill, it shows the current beat and its time bar, a pace meter and the clock. Space or a tap starts the next beat."
+      }
+    ]
+  },
+  "capture": [],
+  "sources": [
+    "https://practice-studio-seven.vercel.app/",
+    "https://practice-studio-seven.vercel.app/static/live.js",
+    "https://practice-studio-seven.vercel.app/static/live.css",
+    "https://practice-studio-seven.vercel.app/api/sample"
+  ]
+}

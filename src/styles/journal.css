@@ -1,0 +1,375 @@
+/* The blog and the feed, set in the gallery's language (gallery.css holds the tokens, the top bar,
+   the golden columns .phi and the shared bits used here: .kicker, .meta, .col, .read-more, .pager,
+   .note-next). An index is a list on the three columns; a reading page has its title, a lede and
+   its facts across the columns, then the text to the right of the first cut with its contents
+   held in view on the left. */
+
+/* ── The bar on long pages: paper under it, and a hairline once the page has moved ── */
+
+html:has(main.journal) .bar { background: var(--paper); }
+@supports (animation-timeline: scroll()) {
+  html:has(main.journal) .bar {
+    animation: j-bar-rule linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 64px;
+  }
+}
+@keyframes j-bar-rule {
+  from { box-shadow: 0 1px 0 rgb(0 0 0 / 0); }
+  to { box-shadow: 0 1px 0 var(--rule); }
+}
+/* The bar's link for the part of the site you are in. */
+html:has(main.journal[data-area='blog']) .bar-link[href='/blog'],
+html:has(main.journal[data-area='feed']) .bar-link[href='/feed'] { text-decoration-thickness: 2px; }
+
+/* How far down the page: one ink line under the bar, where the browser can tie it to the scroll. */
+.j-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .j-progress {
+    position: fixed;
+    top: var(--bar);
+    left: 0;
+    right: 0;
+    z-index: 21;
+    display: block;
+    height: 1px;
+    background: var(--ink);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+    animation: j-progress linear both;
+    animation-timeline: scroll(root);
+    pointer-events: none;
+  }
+}
+@keyframes j-progress { to { transform: scaleX(1); } }
+
+/* ── The page ─────────────────────────────────────────────────────────────────── */
+
+.journal {
+  --pad: clamp(40px, 7vh, 88px);
+  padding-top: calc(var(--bar) + clamp(56px, 15vh, 168px));
+}
+.journal > :last-child { margin-bottom: clamp(32px, 6vh, 64px); border-bottom: 1px solid var(--rule); }
+
+.journal .kicker a { text-decoration: none; }
+.journal .kicker a:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+
+/* The head: title on the left, a lede in the narrow column, the facts on the right. */
+.j-head > .cell { padding-block: 20px clamp(40px, 7vh, 72px); }
+.j-head .kicker { margin: 0 0 14px; }
+.j-title {
+  margin: -4px 0 0;
+  font: 400 clamp(32px, 3.5vw, 56px)/1.02 var(--sans);
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.j-head .col { font-size: 13.5px; }
+.j-head .col p { max-width: 28em; }
+.j-head .meta div { grid-template-columns: 6.4em 1fr; }
+.j-head .meta dd { font-size: 13px; }
+.j-head .pager { margin-top: 18px; }
+.j-jump { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0; padding: 0; list-style: none; font: 400 11px/1.6 var(--mono); text-transform: uppercase; }
+.j-jump a { text-underline-offset: 3px; }
+
+/* ── Index: groups and rows ───────────────────────────────────────────────────── */
+
+.j-group > .j-group-head > .cell { padding-block: clamp(36px, 6vh, 64px) 14px; }
+.j-group-label {
+  margin: 0;
+  font: 400 clamp(22px, 2.1vw, 32px)/1.05 var(--sans);
+  letter-spacing: -0.022em;
+}
+.j-group-head .kicker { margin: 0; padding-top: 0.55em; }
+
+.j-list { margin: 0; padding: 0; list-style: none; }
+.j-row { text-decoration: none; transition: color 0.3s ease; }
+.j-row > .cell { padding-block: 16px 18px; }
+.j-row-title {
+  display: block;
+  font: 400 clamp(17px, 1.45vw, 22px)/1.22 var(--sans);
+  letter-spacing: -0.012em;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+.j-row-meta { display: grid; align-content: start; gap: 2px; padding-top: 4px; font: 400 11px/1.5 var(--mono); text-transform: uppercase; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.j-row-text {
+  display: -webkit-box;
+  max-width: 36em;
+  margin: 0;
+  padding-top: 2px;
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.j-row-points { display: grid; gap: 6px; margin: 0; padding: 2px 0 0; list-style: none; counter-reset: j-p; color: var(--ink-2); font-size: 13.5px; line-height: 1.45; }
+.j-row-points li { display: grid; grid-template-columns: 1.8em 1fr; counter-increment: j-p; }
+.j-row-points li::before { content: counter(j-p, decimal-leading-zero); color: var(--ink-3); font: 400 10px/2 var(--mono); }
+.j-row:hover .j-row-title, .j-row:focus-visible .j-row-title { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.14em; }
+@media (hover: hover) {
+  .j-list:has(.j-row:hover) .j-row:not(:hover) { color: var(--ink-3); }
+  .j-list:has(.j-row:hover) .j-row:not(:hover) :is(.j-row-meta, .j-row-text, .j-row-points) { color: var(--ink-3); }
+}
+.j-row:focus-visible { outline-offset: -2px; }
+
+/* ── Reading page ─────────────────────────────────────────────────────────────── */
+
+/* The text runs across the two right columns, so only the first cut is drawn beside it. */
+.j-body::after { display: none; }
+.j-body > .cell { padding-block: var(--pad) calc(var(--pad) * 1.4); }
+.j-body > .cell.a { z-index: 2; }
+.j-body > .cell.bc { display: block; padding-left: var(--inset); }
+
+.j-contents {
+  position: sticky;
+  top: calc(var(--bar) + 36px);
+  max-height: calc(100vh - var(--bar) - 72px);
+  overflow-y: auto;
+  scrollbar-width: none;
+  padding-right: 8px;
+}
+.j-contents::-webkit-scrollbar { display: none; }
+.j-contents .kicker { margin: 0 0 14px; }
+.j-contents ol { margin: 0; padding: 0; list-style: none; counter-reset: j-c; }
+.j-contents li { counter-increment: j-c; }
+.j-contents a {
+  display: grid;
+  grid-template-columns: 2.4em 1fr;
+  max-width: 24em;
+  padding: 4px 0;
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 1.35;
+  text-decoration: none;
+  transition: color 0.25s ease;
+}
+.j-contents a::before { content: counter(j-c, decimal-leading-zero); color: var(--ink-3); font: 400 10px/1.85 var(--mono); }
+.j-contents li.sub { counter-increment: none; }
+.j-contents li.sub a { padding-left: 2.4em; grid-template-columns: 1fr; font-size: 12.5px; }
+.j-contents li.sub a::before { content: none; }
+.j-contents a:hover { color: var(--ink); }
+.j-contents a[aria-current] { color: var(--ink); }
+.j-contents a[aria-current]::before { color: var(--ink); }
+
+/* ── The text ─────────────────────────────────────────────────────────────────── */
+
+.prose {
+  --measure: 38em;
+  font: 400 17px/1.7 var(--sans);
+  letter-spacing: -0.003em;
+  font-feature-settings: 'ss01' 0;
+  text-wrap: pretty;
+  overflow-wrap: break-word;
+  counter-reset: j-h2;
+}
+.prose > * { max-width: var(--measure); margin-block: 0 1.1em; }
+.prose > :first-child { margin-top: 0; }
+.prose > :last-child { margin-bottom: 0; }
+
+.prose :is(h1, h2) {
+  margin: 2.6em 0 0.75em;
+  font: 400 clamp(24px, 2.05vw, 31px)/1.16 var(--sans);
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+  scroll-margin-top: calc(var(--bar) + 28px);
+}
+.prose > h2 { counter-increment: j-h2; }
+.prose > h2::before {
+  content: counter(j-h2, decimal-leading-zero);
+  display: block;
+  margin-bottom: 14px;
+  color: var(--ink-2);
+  font: 400 11px/1 var(--mono);
+  letter-spacing: 0.01em;
+}
+.prose h3 {
+  margin: 2.1em 0 0.6em;
+  font: 500 clamp(18px, 1.35vw, 20px)/1.3 var(--sans);
+  letter-spacing: -0.012em;
+  scroll-margin-top: calc(var(--bar) + 28px);
+}
+.prose :is(h4, h5, h6) {
+  margin: 2em 0 0.6em;
+  font: 400 12px/1.4 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  scroll-margin-top: calc(var(--bar) + 28px);
+}
+.prose :is(h1, h2, h3, h4) + :is(h2, h3, h4) { margin-top: 0.8em; }
+
+.prose a { text-decoration-thickness: 1px; text-underline-offset: 0.2em; text-decoration-color: rgb(0 0 0 / 0.4); transition: text-decoration-color 0.2s ease; }
+.prose a:hover { text-decoration-color: var(--ink); text-decoration-thickness: 2px; }
+.prose strong, .prose b { font-weight: 600; }
+.prose em, .prose i { font-style: italic; }
+.prose mark { background: rgb(0 0 0 / 0.08); color: inherit; padding: 0 0.15em; }
+.prose del { color: var(--ink-2); }
+.prose sub, .prose sup { line-height: 0; }
+
+.prose :is(ul, ol) { padding-left: 1.25em; }
+.prose li { margin: 0 0 0.45em; padding-left: 0.2em; }
+.prose li > :is(ul, ol) { margin: 0.45em 0 0.2em; }
+.prose li > p { margin: 0 0 0.5em; }
+.prose ul > li::marker { color: var(--ink-3); }
+.prose ol > li::marker { color: var(--ink-2); font: 400 0.72em var(--mono); }
+.prose li:has(> input[type='checkbox']) { list-style: none; margin-left: -1.25em; }
+.prose input[type='checkbox'] { accent-color: var(--ink); margin: 0 0.5em 0 0; }
+
+.prose blockquote {
+  margin-inline: 0;
+  padding: 0.1em 0 0.1em 1.25em;
+  border-left: 1px solid var(--ink);
+  color: #3c3c3c;
+}
+.prose blockquote > :last-child { margin-bottom: 0; }
+.prose blockquote p { margin: 0 0 0.8em; }
+
+.prose hr { height: 0; margin: 2.8em 0; border: 0; border-top: 1px solid var(--rule); }
+
+/* Pictures keep their own shape: never cropped or stretched, at most as wide as the two columns. */
+.prose img { height: auto; max-width: 100%; box-shadow: 0 0 0 1px var(--line); background: #f1f1f1; }
+.prose > p:has(> img:only-child), .prose > figure:has(img) { max-width: 100%; margin-block: 2em; }
+.prose > p:has(> img) img { display: inline-block; vertical-align: top; }
+.prose figure { margin-inline: 0; }
+.prose figcaption { margin-top: 10px; color: var(--ink-2); font: 400 11px/1.5 var(--mono); text-transform: uppercase; }
+
+/* Code: Space Mono on the paper between two hairlines, in black and greys. Blocks come from Astro's
+   Shiki (pre.astro-code, github-dark) and inline code from rehype-pretty-code (github-light); both
+   write their theme's ground and colours inline. The ground is taken away and the colours mapped
+   to ink: keywords bold, strings and numbers in dark greys, comments light. */
+.prose code { font-family: var(--mono); font-size: 0.8em; }
+.prose :not(pre) > code,
+.prose span[data-rehype-pretty-code-figure] > code {
+  padding: 0.06em 0.26em;
+  background: rgb(0 0 0 / 0.045) !important;
+  color: var(--ink) !important;
+  overflow-wrap: anywhere;
+}
+.prose span[data-rehype-pretty-code-figure] > code span { color: inherit !important; }
+.prose > figure[data-rehype-pretty-code-figure], .prose > pre { max-width: 100%; margin-block: 1.8em 2em; }
+.prose pre {
+  position: relative;
+  margin: 0;
+  padding: 18px 0 20px;
+  overflow-x: auto;
+  border-block: 1px solid var(--rule);
+  background: transparent !important;
+  color: var(--ink) !important;
+  font-size: 12.5px;
+  line-height: 1.7;
+  tab-size: 2;
+  scrollbar-width: thin;
+  scrollbar-color: var(--ink-3) transparent;
+}
+.prose pre code { display: block; min-width: max-content; padding: 0; background: none !important; font-size: inherit; }
+.prose pre code span { color: var(--ink) !important; }
+.prose pre code :is([style*='#6A737D' i], [style*='#959DA5' i]) { color: var(--ink-3) !important; }
+.prose pre code :is([style*='#F97583' i], [style*='#D73A49' i]) { font-weight: 700; }
+.prose pre code :is([style*='#9ECBFF' i], [style*='#032F62' i], [style*='#DBEDFF' i]) { color: #505050 !important; }
+.prose pre code :is([style*='#79B8FF' i], [style*='#005CC5' i], [style*='#FFAB70' i], [style*='#E36209' i]) { color: #2f2f2f !important; }
+.prose pre .line { padding-right: 16px; }
+.prose pre [data-line] { padding-right: 16px; }
+.prose pre [data-highlighted-line] { background: rgb(0 0 0 / 0.06); }
+.prose figure[data-rehype-pretty-code-figure] { position: relative; margin-inline: 0; }
+.prose pre[data-language]:not([data-language='plaintext'], [data-language='text'])::before {
+  content: attr(data-language);
+  position: sticky;
+  left: 100%;
+  float: right;
+  margin: -10px 0 0 12px;
+  color: var(--ink-3);
+  font: 400 10px/1 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.prose [data-rehype-pretty-code-title] { margin-bottom: -1px; padding: 8px 0; border-top: 1px solid var(--rule); color: var(--ink-2); font: 400 11px/1.4 var(--mono); }
+
+/* Tables: rules between rows, mono capitals for the head; wide ones scroll on their own. */
+.prose table {
+  display: block;
+  max-width: 100%;
+  margin-block: 1.8em 2em;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 14px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.prose th {
+  padding: 0 18px 8px 0;
+  border-bottom: 1px solid var(--ink);
+  color: var(--ink-2);
+  font: 400 10.5px/1.4 var(--mono);
+  text-align: left;
+  text-transform: uppercase;
+  vertical-align: bottom;
+}
+.prose td { padding: 9px 18px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.prose td code { white-space: nowrap; }
+
+/* Obsidian callouts (remark-obsidian-callout): a label in mono capitals over a rule, no box. */
+.prose blockquote.callout { padding: 14px 0 2px; border-left: 0; border-top: 1px solid var(--ink); color: var(--ink); }
+.prose .callout-title { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font: 400 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.02em; }
+.prose .callout-title-icon { display: none; }
+.prose .callout-content { color: #333; font-size: 0.94em; }
+.prose .callout-content > :last-child { margin-bottom: 0.4em; }
+.prose blockquote.callout + blockquote.callout { margin-top: -0.2em; }
+
+/* Footnotes. */
+.prose sup a, .prose a[data-footnote-ref] { padding: 0 0.1em; font: 400 0.7em var(--mono); text-decoration: none; }
+.prose .footnotes, .prose section[data-footnotes] {
+  max-width: var(--measure);
+  margin-top: 3.4em;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.55;
+}
+.prose .footnotes h2 { margin: 0 0 12px; font: 400 11px/1.3 var(--mono); text-transform: uppercase; letter-spacing: 0.01em; }
+.prose .footnotes h2::before { content: none; }
+.prose .footnotes ol { padding-left: 1.4em; }
+.prose a[data-footnote-backref] { text-decoration: none; }
+
+/* KaTeX, should it be turned on. */
+.prose .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+
+/* The feed's briefings start with their own title; the page already has one. */
+.journal[data-area='feed'] .prose > h1:first-child { display: none; }
+.journal[data-area='feed'] .prose > h1:first-child + * { margin-top: 0; }
+.journal[data-area='feed'] .prose > blockquote:first-of-type { font-size: 0.94em; }
+
+/* The way on, set like the project pages' (gallery .note-next). */
+.j-next > .cell.b { display: flex; align-items: center; justify-content: center; }
+.j-next .j-all { font: 400 11px/1.3 var(--mono); text-transform: uppercase; text-underline-offset: 3px; }
+.j-next .cell:empty { pointer-events: none; }
+
+::selection { background: rgb(0 0 0 / 0.14); }
+
+/* ── Phones: one column ───────────────────────────────────────────────────────── */
+
+@media (max-width: 760px) {
+  .journal { padding-top: calc(var(--bar) + 40px); }
+  .j-head { padding-block: 20px 36px; }
+  .j-head > .cell { padding-block: 0; }
+  .j-group-head { padding-block: 40px 8px; flex-direction: row !important; align-items: baseline; justify-content: space-between; }
+  .j-group-head > .cell { padding: 0 !important; }
+  .j-row { gap: 6px !important; padding-block: 16px 18px; }
+  .j-row > .cell { padding: 0 !important; }
+  .j-row-meta { display: flex; gap: 12px; padding: 0; }
+  .j-row-text { -webkit-line-clamp: 2; }
+  .j-body { padding-block: 32px 48px; }
+  .j-body > .cell.a:not(:has(.j-contents)) { display: none; }
+  .j-contents { position: static; max-height: none; padding: 0 0 8px; border-bottom: 1px solid var(--rule); }
+  .j-contents li.sub { display: none; }
+  .prose { font-size: 16px; line-height: 1.68; }
+  .prose pre { font-size: 12px; }
+  .j-next { flex-direction: row !important; justify-content: space-between; }
+  .j-next > .cell.b { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .j-row, .j-contents a, .prose a { transition: none; }
+}

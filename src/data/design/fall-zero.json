@@ -1,0 +1,40 @@
+{
+  "features": {
+    "title": "A room photo in, a tip-over verdict out",
+    "intro": "Fall 0 looks at a photo or video of a room and checks whether each piece of furniture could tip when a child climbs it, an older adult grabs it, or the ground shakes. SAM 3.1 outlines the pieces, and a MuJoCo model tests them.",
+    "items": [
+      {
+        "name": "Snap the room",
+        "text": "The first screen lays out the four steps of a check. Four sample rooms sit above the chat bar to try first, and your own photo, short video or spoken question works too.",
+        "shot": "home"
+      },
+      {
+        "name": "Replay in 3D",
+        "text": "A panel slides in and plays the room in 3D. A child climbs an open drawer, an adult grabs it or an earthquake shakes it, and a piece that tips says how fast it fell.",
+        "shot": "check"
+      },
+      {
+        "name": "Questions and fixes",
+        "text": "The card asks what a photo can't show, such as which floor the room is on. Each fix shows its cost and time, and \"I did this\" runs the physics again."
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "check",
+      "name": "A room checked",
+      "device": "desktop",
+      "steps": [
+        { "click": ".sample[data-src*=\"nursery\"]", "wait": 1500 },
+        { "click": "#send", "wait": 80000 }
+      ]
+    }
+  ],
+  "sources": [
+    "fall-zero/README.md",
+    "fall-zero/docs/HANDOFF.md",
+    "fall-zero/web/index.html",
+    "fall-zero/web/app.js",
+    "https://fall-zero.vercel.app/"
+  ]
+}

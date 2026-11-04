@@ -1,0 +1,47 @@
+{
+  "features": {
+    "title": "Walk through the parts, then run the demo",
+    "intro": "Pi Flow runs work as a graph of agents, where each node is a full agent in its own sandbox. An agent designs the graph from a goal, and a background loop writes down what worked so the next run starts ahead.",
+    "items": [
+      {
+        "name": "Agent cards",
+        "text": "The product section holds still, and each scroll moves exactly one panel: Agents, Workflow, then Memory. Each card names one part of Pi Flow, and its art turns from grey to colour on hover.",
+        "shot": "section-1"
+      },
+      {
+        "name": "Part pages",
+        "text": "Clicking a card opens a full-screen page on that part, with what it does and a drawing. Arrows in the corners go back to the cards or step to the previous and next part.",
+        "shot": "node"
+      },
+      {
+        "name": "Live demo",
+        "text": "The demo screen runs Pi Flow's real GUI in the page, as a static build with a finished sample run. The TUI tab swaps in the terminal monitor, fed the same sample data.",
+        "shot": "demo"
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "node",
+      "name": "A part",
+      "device": "desktop",
+      "steps": [{ "click": "a[href=\"/product/node\"]", "wait": 2500 }]
+    },
+    {
+      "id": "demo",
+      "name": "Demo",
+      "device": "desktop",
+      "scrollTo": "#start",
+      "wait": 5000
+    }
+  ],
+  "sources": [
+    "PiFlow/README.md",
+    "PiFlow/site-piflow/app/page.tsx",
+    "PiFlow/site-piflow/app/_sections/ProductScreens.tsx",
+    "PiFlow/site-piflow/app/_sections/CTA.tsx",
+    "PiFlow/site-piflow/app/product/[id]/page.tsx",
+    "PiFlow/site-piflow/app/globals.css",
+    "https://piflow.sh/"
+  ]
+}

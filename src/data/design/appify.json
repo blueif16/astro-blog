@@ -1,0 +1,41 @@
+{
+  "interface": {
+    "title": "One screen, and the depth opens over it",
+    "body": [
+      "The page never becomes a long scroll of sections. Studio and Skill are tabs: each wipes a dark sheet down over the page, the same tab closes it, the other tab swaps it, and Escape closes it.",
+      "What stays on the page is the promise, one prompt to copy, and the agents it works with."
+    ],
+    "shot": "studio"
+  },
+  "palette": {
+    "title": "Apple's greys, with colour saved for two moments",
+    "body": "Near-black on white, and greys for everything else. A holographic gradient marks the open tab and the announcement chip, and a yellow floods the hero when you point at the main button.",
+    "colors": [
+      { "value": "#ffffff", "name": "Paper", "role": "The page" },
+      { "value": "#1d1d1f", "name": "Ink", "role": "Text" },
+      { "value": "#0b0b0c", "name": "Sheet", "role": "Studio and Skill" },
+      { "value": "#d2d2d7", "name": "Line", "role": "Hairlines" },
+      { "value": "#ffe03d", "name": "Go", "role": "The hero, on hover" },
+      { "value": "linear-gradient(135deg, #ffb3d9, #c3b2ff 28%, #9edcff 52%, #b6f5cf 76%, #ffeaa0)", "name": "Holo", "role": "The open tab" }
+    ]
+  },
+  "type": {
+    "title": "A grotesque with character for the big lines",
+    "body": "Bricolage Grotesque sets the headline and the sheets' big lines, Inter does the reading, and IBM Plex Mono labels and code.",
+    "faces": [
+      { "family": "Bricolage Grotesque", "google": "Bricolage+Grotesque:opsz,wght@12..96,600", "weight": 600, "role": "Headline and sheet titles", "sample": "Same link. Feels like an app." },
+      { "family": "Inter", "google": "Inter:wght@400", "weight": 400, "role": "Body and interface", "sample": "A skill and a studio that teach your coding agent." },
+      { "family": "IBM Plex Mono", "google": "IBM+Plex+Mono:wght@400", "weight": 400, "role": "Labels and code", "sample": ".appify/comments.json" }
+    ]
+  },
+  "features": {
+    "title": "One prompt to start, four parts after it",
+    "items": [
+      { "name": "Setup prompt", "text": "One button copies a prompt. Pasted into any coding agent, it installs the skill and opens the studio." },
+      { "name": "Studio", "text": "Your running app in a desktop window and several phones side by side, each phone with its own user agent, touch and safe areas." },
+      { "name": "Skill", "text": "Six steps for the agent, each with a checkpoint: shell, navigation, layout, input, installable, shareable." },
+      { "name": "On my phone", "text": "A temporary HTTPS link and a QR code, to open the app on a real iPhone or Android." }
+    ]
+  },
+  "sources": ["appify/README.md", "appify/site/css/site.css", "appify/site/index.html", "site-kit/PRACTICES.md"]
+}

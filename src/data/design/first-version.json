@@ -1,0 +1,27 @@
+{
+  "features": {
+    "title": "An About page told by scrolling",
+    "intro": "The earlier version of this site now lives at /v1. It is a single About page that plays as you scroll, with a low-poly 3D hedgehog at its centre. It is built with Astro, three.js draws the hedgehog and GSAP ScrollTrigger drives the motion.",
+    "items": [
+      { "name": "Scroll story", "text": "The headline's letters fly together on load and scatter as you scroll on. The hedgehog then rides up from the foot of the first screen to the centre, where it stays through the projects.", "shot": "intro" },
+      { "name": "Stack cards", "text": "Four cards, one per part of the stack, fly in around the hedgehog from the four sides and fly back out as the section ends.", "shot": "stack" },
+      { "name": "Project cards", "text": "Two columns of projects slide past in opposite directions. Pointing at a card opens it and turns the hedgehog toward it. The project's longer write-up then fills the centre, its lines wrapped around the hedgehog.", "shot": "projects" }
+    ]
+  },
+  "capture": [
+    {
+      "id": "projects",
+      "name": "Projects",
+      "steps": [
+        { "scrollTo": ".pin-spacer", "wait": 2500 },
+        { "hover": ".project-card[data-project-id=\"cc-sts\"]", "wait": 2500 }
+      ]
+    }
+  ],
+  "sources": [
+    "astro-blog/src/pages/v1/index.astro",
+    "astro-blog/src/layouts/PortfolioLayout.astro",
+    "astro-blog/src/data/work.config.mjs",
+    "https://astro-blog-lemon.vercel.app/"
+  ]
+}

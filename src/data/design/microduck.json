@@ -1,0 +1,32 @@
+{
+  "features": {
+    "title": "Every joint of the robot, every training task",
+    "intro": "An atlas of the Microduck, an open-source 25 cm two-legged robot. It marks each of its 14 joints with what each of 33 training tasks does to it. Every number is read from the training config and the MuJoCo model.",
+    "items": [
+      { "name": "Joint inspector", "text": "Pick a joint in the list or on the 3D model to see its limits, motor, rewards and randomisation, and where it enters the policy's input. A slider moves the joint on the model.", "shot": "atlas" },
+      { "name": "Training loop", "text": "For tasks with a real training run, the loop tab shows the design, the PPO training curves and a validation of every checkpoint, replayed on the 3D duck.", "shot": "loop" },
+      { "name": "Policy clips", "text": "Hovering a task plays a short loop of a trained policy doing it, rendered in MuJoCo with only the robot drawn. Tasks with no policy yet say so.", "shot": "clip" },
+      { "name": "Curriculum slider", "text": "A slider under the robot steps through training iterations and shows which command ranges and reward weights the curriculum has reached at each one." }
+    ]
+  },
+  "capture": [
+    {
+      "id": "loop",
+      "name": "Training loop",
+      "steps": [{ "click": "#tabs [data-tab=\"loop\"]", "wait": 2500 }]
+    },
+    {
+      "id": "clip",
+      "name": "Policy clip",
+      "steps": [{ "hover": ".prof-btn", "wait": 3000 }]
+    }
+  ],
+  "sources": [
+    "phyai/microduck-viz/README.md",
+    "phyai/microduck-viz/index.html",
+    "phyai/microduck-viz/js/app.js",
+    "phyai/microduck-viz/js/clips.js",
+    "phyai/microduck-viz/data/embodiments/index.json",
+    "https://microduck-viz.vercel.app/"
+  ]
+}

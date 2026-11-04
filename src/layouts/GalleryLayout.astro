@@ -1,0 +1,152 @@
+---
+// The current site, in black and white. The index gets a top bar (wordmark, Stack, About, Blog,
+// Feed) whose Stack and About open a full-screen sheet (site-kit, PRACTICES.md #1). A project page
+// is a report spread with its own top bar, so it asks for no chrome.
+import '../components/kit/full-screen-sheet/sheet.css';
+import '../styles/gallery.css';
+import { allWork, stackIndex } from '../data/work';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  /** 'index' adds the top bar and the sheet; 'spread' is a project page with its own top bar. */
+  page?: 'index' | 'spread';
+}
+
+const { title, description, image, page = 'index' } = Astro.props;
+
+const stack = stackIndex(allWork());
+
+// The four areas from the first version of the site, in the same words.
+const areas = [
+  { name: 'Agents', line: 'Building things that think in loops.', tags: 'Orchestration, context management, AG-UI, agentic workflow' },
+  { name: 'LLM', line: 'Shaping the model after pretraining.', tags: 'SFT, RFT, GRPO, distillation' },
+  { name: 'Full stack', line: 'From idea to shippable in a weekend.', tags: 'React, Next.js, shadcn/ui, Swift' },
+  { name: 'Production', line: 'Taking AI from demo to reliable.', tags: 'Observability, LLM-as-judge evals, model gateway, guardrails' },
+];
+
+const tabs = [
+  { view: 'stack', label: 'Stack' },
+  { view: 'about', label: 'About' },
+];
+const links = [
+  { href: '/work', label: 'Work' },
+  { href: '/blog', label: 'Blog' },
+  { href: '/feed', label: 'Feed' },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    {image && <meta property="og:image" content={new URL(image, Astro.site ?? Astro.url).href} />}
+    <meta name="theme-color" content="#e3e1dc" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <slot name="head" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    {page === 'index' && (
+      <script is:inline>
+        // Pick the view before the first paint, so a visitor who left in grid view comes back to it
+        // without a flash of the other one. ?view= wins over what this browser remembers.
+        (function () {
+          document.documentElement.classList.add('js');
+          var view = new URLSearchParams(location.search).get('view');
+          if (view !== 'grid' && view !== 'scroll') {
+            try { view = localStorage.getItem('gallery-view'); } catch (e) {}
+          }
+          if (view === 'grid') document.documentElement.dataset.view = 'grid';
+        })();
+      </script>
+    )}
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to the work</a>
+
+    {page === 'index' && (
+      <header class="bar">
+        <a class="wordmark" href="/">Shiran Wang</a>
+        <nav aria-label="Site">
+          <ul class="bar-links">
+            {tabs.map((t) => <li><button type="button" class="bar-link" data-sheet={t.view} aria-haspopup="dialog">{t.label}</button></li>)}
+            {links.map((l) => <li><a class="bar-link" href={l.href}>{l.label}</a></li>)}
+          </ul>
+        </nav>
+      </header>
+    )}
+
+    <slot />
+
+    {page === 'index' && (
+      <dialog class="sheet" data-sheet-dialog aria-label="Shiran Wang">
+        <div class="sheet-inner">
+          <div class="sheet-top">
+            <button type="button" class="logo sheet-logo" data-close>Shiran Wang</button>
+            <div class="sheet-tabs">
+              {tabs.map((t) => <button type="button" class="nav-tab" data-sheet={t.view}>{t.label}</button>)}
+            </div>
+            <button type="button" class="sheet-close" data-close><span>Close</span></button>
+          </div>
+
+          <section class="sheet-view" data-view="stack" hidden>
+            <ul class="big-list sheet-main">
+              {areas.map((a) => (
+                <li>
+                  <span class="big">{a.name}</span>
+                  <span class="big-sub">{a.line} {a.tags}.</span>
+                </li>
+              ))}
+            </ul>
+            <div class="sheet-table">
+              <p class="sheet-label">In the work on this site</p>
+              <dl class="stack-table">
+                {stack.map((t) => (
+                  <div>
+                    <dt>{t.name}</dt>
+                    <dd>{t.uses.map((w, i) => <>{i > 0 && ', '}<a href={`/work/${w.slug}`}>{w.title}</a></>)}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </section>
+
+          <section class="sheet-view" data-view="about" hidden>
+            <ul class="big-list sheet-main">
+              <li>
+                <span class="big">Building things that matter.</span>
+                <span class="big-sub">Building either dev tool or an actual product. Currently working with K-12 education AI.</span>
+              </li>
+            </ul>
+            <div class="sheet-table">
+              <p class="sheet-label">If you have great ideas, let's talk</p>
+              <ul class="small-list">
+                <li><a href="https://github.com/blueif16" rel="noopener">GitHub</a></li>
+                <li><a href="https://www.linkedin.com/in/shiran-wang-2b2478338" rel="noopener">LinkedIn</a></li>
+              </ul>
+            </div>
+          </section>
+        </div>
+      </dialog>
+    )}
+
+    {page === 'index' && (
+      <script>
+        import { startSheet } from '../components/kit/full-screen-sheet/sheet.js';
+        startSheet(document.querySelector('[data-sheet-dialog]'));
+      </script>
+    )}
+  </body>
+</html>

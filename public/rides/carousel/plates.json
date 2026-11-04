@@ -1,0 +1,21 @@
+{
+ "west": {
+  "file": "plate_west.webp",
+  "rect": [
+   1574.8,
+   1173.8,
+   192.8,
+   113.2
+  ],
+  "take": "plate_west_v1_0",
+  "column": {
+   "file": "column_west.webp",
+   "rect": [
+    1659.6,
+    1205.4,
+    26.0,
+    51.6
+   ]
+  }
+ }
+}

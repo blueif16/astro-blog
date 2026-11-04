@@ -1,0 +1,113 @@
+---
+import GalleryLayout from '../../layouts/GalleryLayout.astro';
+import { allWork, filmLength, largest, shotSrc, shotSrcset } from '../../data/work';
+
+const works = allWork();
+const description = "Interfaces I'm proud of. Each picture is taken from the live site, so it changes when the site does.";
+const pad = (n: number) => String(n).padStart(2, '0');
+const src = (w: (typeof works)[number]) => shotSrc(w.slug, w.cover, w.cover.widths.includes(1200) ? 1200 : largest(w.cover));
+const metaLine = (w: (typeof works)[number]) => [w.year, ...w.stack].join(' · ');
+---
+
+<GalleryLayout title="Shiran Wang" description={description} image={works[0] && src(works[0])}>
+  <main id="main" data-index>
+    <h1 class="sr-only">Shiran Wang: interfaces</h1>
+
+    <section class="scroll" data-scroll aria-label="Work, one at a time" style={`--n: ${works.length}`}>
+      <ol class="names" data-names aria-label="Work">
+        {works.map((work, i) => (
+          <li><a href={`/work/${work.slug}`} data-name={i} aria-current={i === 0 ? 'true' : 'false'}>{work.title}</a></li>
+        ))}
+      </ol>
+
+      <ol class="reel" data-reel>
+        {works.map((work, i) => (
+          <li class="frame">
+            <a class="frame-link" href={`/work/${work.slug}`}>
+              <img
+                src={src(work)}
+                srcset={shotSrcset(work.slug, work.cover)}
+                sizes="(max-width: 760px) 100vw, 42vw"
+                alt=""
+                data-slug={work.slug}
+                width={1440}
+                height={900}
+                loading={i < 3 ? 'eager' : 'lazy'}
+                decoding="async"
+              />
+              <span class="frame-text">
+                <span class="num" aria-hidden="true">({i + 1})</span>
+                <span class="frame-name">{work.title}</span>
+                {work.about && <span class="frame-about">{work.about}</span>}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ol>
+
+      <div class="captions" aria-live="polite">
+        {works.map((work, i) => (
+          <div class:list={['caption', { 'is-on': i === 0 }]} data-caption={i} aria-hidden={i === 0 ? 'false' : 'true'}>
+            {work.about && <p class="caption-about">{work.about}</p>}
+            <p class="caption-meta">{metaLine(work)}</p>
+            {work.films.length > 0 && (
+              <a class="caption-films" href={`/work/${work.slug}#films`} tabindex={i === 0 ? undefined : -1}>
+                {work.films.slice(0, 2).map((film) => (
+                  <span class="caption-film">
+                    <span class="caption-film-frame" style={`--r: ${(film.width / film.height).toFixed(4)}`}>
+                      <video src={film.loop} poster={film.poster} muted loop playsinline preload="none" aria-hidden="true" data-caption-loop />
+                    </span>
+                    <span class="caption-film-name">{film.title}<span class="caption-film-len"> {filmLength(film.duration)}</span></span>
+                  </span>
+                ))}
+                <span class="caption-films-more">
+                  {work.films.length > 2 ? `All ${work.films.length} films →` : work.films.length === 2 ? 'Both films →' : 'Watch the film →'}
+                </span>
+              </a>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div class="snaps" aria-hidden="true">
+        {works.map((_, i) => <span style={`--i: ${i}`} />)}
+      </div>
+    </section>
+
+    <section class="grid" data-grid aria-label="All the work">
+      <ol class="tiles" data-tiles>
+        {works.map((work, i) => (
+          <li class="tile">
+            <a href={`/work/${work.slug}`}>
+              <img
+                src={shotSrc(work.slug, work.cover, work.cover.widths.includes(600) ? 600 : largest(work.cover))}
+                srcset={shotSrcset(work.slug, work.cover)}
+                sizes="(max-width: 760px) 50vw, 25vw"
+                alt=""
+                data-slug={work.slug}
+                width={1440}
+                height={900}
+                loading="lazy"
+                decoding="async"
+              />
+              <span class="tile-name"><span class="num" aria-hidden="true">{pad(i + 1)}</span>{work.title}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="count" data-count data-only="scroll" aria-hidden="true">({pad(1)}/{pad(works.length)})</p>
+    <div class="switch" role="group" aria-label="View">
+      <button type="button" data-view-to="scroll" aria-pressed="true">Scroll</button>
+      <button type="button" data-view-to="grid" aria-pressed="false">Grid</button>
+    </div>
+  </footer>
+
+  <script>
+    import { startIndex } from '../../scripts/gallery-index';
+    startIndex();
+  </script>
+</GalleryLayout>

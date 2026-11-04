@@ -1,0 +1,13 @@
+# Local-only material the CLI must not upload (Vercel builds from the source).
+node_modules
+dist
+.astro
+.tasks
+.playwright-mcp
+files-2
+website
+scripts/films/.work
+scripts/capture/node_modules
+scripts/capture/.seen.json
+scripts/capture/stills
+.env*

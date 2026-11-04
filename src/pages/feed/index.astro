@@ -1,21 +1,82 @@
 ---
+// The feed: a briefing for each day, newest first, grouped by month. Each row is the day, its
+// reading time, and the leads of its highlights (the bullets under "## 重点").
+import JournalLayout from '../../layouts/JournalLayout.astro';
 import { getCollection } from 'astro:content';
+import { fmtDay, fmtDayShort, fmtMonth, fmtWeekdayShort, highlights, isoDay, readingMinutes } from '../../utils/journal';
 
-const entries = await getCollection('feed');
-let target = '/';
+const days = (await getCollection('feed'))
+  .map((entry) => ({ entry, date: new Date(entry.data.date), slug: isoDay(new Date(entry.data.date)) }))
+  .sort((a, b) => b.date.getTime() - a.date.getTime())
+  // One page per day, as the day pages have it.
+  .filter((d, i, all) => all.findIndex((o) => o.slug === d.slug) === i);
 
-if (entries.length) {
-  const sorted = entries.sort((a, b) => new Date(b.data.date).getTime() - new Date(a.data.date).getTime());
-  const d = new Date(sorted[0].data.date);
-  const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
-  target = `/feed/${dateStr}`;
+const byMonth = new Map<string, typeof days>();
+for (const d of days) {
+  const key = d.slug.slice(0, 7);
+  byMonth.set(key, [...(byMonth.get(key) ?? []), d]);
 }
+const months = [...byMonth.keys()].sort().reverse();
+const latest = days[0];
+const first = days[days.length - 1];
 ---
-<html>
-<head>
-  <meta http-equiv="refresh" content={`0;url=${target}`} />
-  <link rel="canonical" href={target} />
-  <meta name="robots" content="noindex" />
-</head>
-<body></body>
-</html>
+
+<JournalLayout title="Feed, Shiran Wang" description="A briefing for each day." area="feed">
+  <header class="j-head phi">
+    <div class="cell a">
+      <h1 class="j-title">Feed</h1>
+    </div>
+    <div class="cell b col">
+      <p>A briefing for each day.</p>
+      {latest && <a class="read-more" href={`/feed/${latest.slug}`}>Latest, {fmtDayShort(latest.date)} →</a>}
+    </div>
+    <div class="cell c col">
+      <dl class="meta">
+        <div><dt>Days</dt><dd>{days.length}</dd></div>
+        {first && latest && <div><dt>From</dt><dd>{fmtDay(first.date)} to {fmtDay(latest.date)}</dd></div>}
+        <div><dt>Also</dt><dd><a href="/blog">Blog</a></dd></div>
+      </dl>
+    </div>
+  </header>
+
+  {days.length === 0 && (
+    <section class="phi j-group-head">
+      <p class="cell a kicker">Nothing here yet.</p>
+    </section>
+  )}
+
+  {months.map((m) => {
+    const list = byMonth.get(m)!;
+    return (
+      <section class="j-group" id={`m${m}`} aria-labelledby={`m${m}-label`}>
+        <div class="phi j-group-head">
+          <h2 class="cell a j-group-label" id={`m${m}-label`}>{fmtMonth(list[0].date)}</h2>
+          <p class="cell b kicker">{list.length} {list.length === 1 ? 'day' : 'days'}</p>
+        </div>
+        <ol class="j-list">
+          {list.map((d) => {
+            const points = highlights(d.entry.body, 3);
+            return (
+              <li>
+                <a class="phi j-row" href={`/feed/${d.slug}`}>
+                  <span class="cell a"><span class="j-row-title">{fmtWeekdayShort(d.date)} {fmtDayShort(d.date)}</span></span>
+                  <span class="cell b j-row-meta">
+                    <time datetime={d.slug}>{d.slug}</time>
+                    <span>{readingMinutes(d.entry.body)} min read</span>
+                  </span>
+                  <span class="cell c">
+                    {points.length > 0 && (
+                      <ol class="j-row-points" lang="zh">
+                        {points.map((p) => <li>{p}</li>)}
+                      </ol>
+                    )}
+                  </span>
+                </a>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+    );
+  })}
+</JournalLayout>

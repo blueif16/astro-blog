@@ -1,0 +1,68 @@
+---
+// The contents of a reading page, in the left golden column, held in view while the text scrolls.
+// The section being read is marked as you go.
+import type { Heading } from '../../utils/journal';
+
+interface Props {
+  items: (Heading & { sub: boolean })[];
+  label?: string;
+}
+
+const { items, label = 'Contents' } = Astro.props;
+---
+
+{items.length > 1 && (
+  <nav class="j-contents" aria-label={label} data-contents>
+    <p class="kicker">{label}</p>
+    <ol>
+      {items.map((h) => (
+        <li class:list={{ sub: h.sub }}>
+          <a href={`#${h.slug}`}>{h.text}</a>
+        </li>
+      ))}
+    </ol>
+  </nav>
+)}
+
+<script>
+  function startContents() {
+    const nav = document.querySelector<HTMLElement>('[data-contents]');
+    if (!nav) return;
+    const links = [...nav.querySelectorAll<HTMLAnchorElement>('a')];
+    const pairs = links
+      .map((a) => ({ a, el: document.getElementById(decodeURIComponent(a.hash.slice(1))) }))
+      .filter((p): p is { a: HTMLAnchorElement; el: HTMLElement } => !!p.el);
+    if (!pairs.length) return;
+
+    let current: HTMLAnchorElement | undefined;
+    let queued = false;
+    const mark = () => {
+      queued = false;
+      const line = window.innerHeight * 0.28;
+      let at: HTMLAnchorElement | undefined;
+      for (const p of pairs) {
+        if (p.el.getBoundingClientRect().top <= line) at = p.a;
+        else break;
+      }
+      if (at === current) return;
+      current?.removeAttribute('aria-current');
+      at?.setAttribute('aria-current', 'location');
+      current = at;
+      // Keep the marked line in view when the list is taller than the screen.
+      if (at && nav.scrollHeight > nav.clientHeight) {
+        const top = at.offsetTop - nav.clientHeight / 2;
+        nav.scrollTo({ top, behavior: 'auto' });
+      }
+    };
+    const queue = () => {
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(mark);
+      }
+    };
+    addEventListener('scroll', queue, { passive: true });
+    addEventListener('resize', queue);
+    mark();
+  }
+  startContents();
+</script>

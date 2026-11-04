@@ -1,5 +1,5 @@
 ---
-import PortfolioLayout from '../layouts/PortfolioLayout.astro';
+import PortfolioLayout from '../../layouts/PortfolioLayout.astro';
 
 const sections = [
   { id: 'intro', label: 'Intro' },
@@ -111,7 +111,7 @@ const projects = [
 ];
 ---
 
-<PortfolioLayout title="About" sections={sections}>
+<PortfolioLayout title="About (earlier version)" sections={sections} home={{ href: '/v1', label: 'About' }} archived>
 
 <style is:global>
   /* ── Hero ── */

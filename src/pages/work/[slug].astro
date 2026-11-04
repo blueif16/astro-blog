@@ -1,0 +1,356 @@
+---
+// A project. The first screen is set like a report spread (docs/design-references/detail-spread.png):
+// a thin top bar with the way back to the gallery, the live site (or its picture) at its own shape
+// in the middle of the space, then the title and short columns of text. Below it, the design notes
+// (src/data/design/<slug>.json), on three columns cut at the golden ratio: 38.2, 23.6, 38.2.
+import GalleryLayout from '../../layouts/GalleryLayout.astro';
+import { allWork, filmLength, largest, shotSrc, shotSrcset } from '../../data/work';
+import { designOf, fibonacciTiles, isLight, specimenFontsHref } from '../../data/design';
+import NoteShot from '../../components/gallery/NoteShot.astro';
+
+export function getStaticPaths() {
+  const works = allWork();
+  return works.map((work, i) => ({
+    params: { slug: work.slug },
+    props: {
+      work,
+      previous: works[(i - 1 + works.length) % works.length],
+      next: works[(i + 1) % works.length],
+    },
+  }));
+}
+
+const { work, previous, next } = Astro.props;
+
+// Start from the cover; the others follow in their order.
+const coverAt = Math.max(0, work.moments.findIndex((m) => m.id === work.cover.id));
+const moments = [...work.moments.slice(coverAt), ...work.moments.slice(0, coverAt)];
+const isExternal = !!work.liveHref?.startsWith('http');
+const liveLabel = !work.liveHref ? '' : isExternal ? new URL(work.liveHref).hostname : 'This site, as it was';
+const visitLabel = work.frozen ? 'Visit this version' : 'Visit the site';
+const phoneShot = work.moments.find((m) => m.device === 'phone');
+const link = isExternal ? { target: '_blank', rel: 'noopener' } : {};
+const visitAria = `${visitLabel}: ${work.title}${isExternal ? ' (opens in a new tab)' : ''}`;
+// Work with no website (a game) shows its pictures without a link on them.
+const MomentLink = work.liveHref ? 'a' : 'div';
+const momentLink = work.liveHref ? { href: work.liveHref, ...link, 'aria-label': visitAria } : {};
+const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+
+const notes = designOf(work.slug);
+const momentOf = (id?: string) => (id ? work.moments.find((m) => m.id === id) : undefined);
+const noteShot = momentOf(notes?.interface?.shot);
+// Features (what it does, how it works), then places (where to go in it): the same rows of words
+// beside a picture.
+const shotLists = [
+  { kicker: 'Features', list: notes?.features },
+  { kicker: 'Places', list: notes?.places },
+].filter((s): s is { kicker: string; list: NonNullable<typeof s.list> } => !!s.list?.items.length);
+const colors = notes?.palette?.colors.slice(0, 6) ?? [];
+const tiling = colors.length ? fibonacciTiles(colors.length) : undefined;
+const fontsHref = specimenFontsHref(notes);
+const face = (f: { family: string; weight?: number }) => `font-family: '${f.family}', var(--sans); font-weight: ${f.weight ?? 400}`;
+const repoLabel = work.repo?.replace(/^https:\/\/github\.com\//, '');
+---
+
+<GalleryLayout
+  title={`${work.title}, Shiran Wang`}
+  description={work.about || undefined}
+  image={shotSrc(work.slug, work.cover, work.cover.widths.includes(1200) ? 1200 : largest(work.cover))}
+  page="spread"
+>
+  {fontsHref && <link slot="head" rel="stylesheet" href={fontsHref} />}
+  <main id="main" class="spread" data-spread data-previous={`/work/${previous.slug}`} data-next={`/work/${next.slug}`} data-home={`/work?at=${work.slug}`}>
+    <div class="first">
+    <header class="spread-top">
+      <a class="back" href={`/work?at=${work.slug}`}>← Gallery</a>
+      <a class="wordmark" href="/" tabindex="-1">Shiran Wang</a>
+    </header>
+
+    <div class="band" data-band data-live={work.live ? work.liveHref : undefined} data-device={work.live ? 'desktop' : undefined}>
+      <div class="stage">
+        {work.live ? (
+          <figure class="moment screen" data-screen style={`--r: 1.6; view-transition-name: shot-${work.slug}`}>
+            <img
+              data-shot="desktop"
+              src={shotSrc(work.slug, work.cover, largest(work.cover))}
+              srcset={shotSrcset(work.slug, work.cover)}
+              sizes="(max-width: 760px) 100vw, 70vw"
+              alt={`${work.title}: ${work.cover.name}`}
+              width={1440}
+              height={900}
+              fetchpriority="high"
+              decoding="async"
+            />
+            {phoneShot && (
+              <img
+                data-shot="phone"
+                src={shotSrc(work.slug, phoneShot, largest(phoneShot))}
+                srcset={shotSrcset(work.slug, phoneShot)}
+                sizes="40vw"
+                alt={`${work.title}: ${phoneShot.name}`}
+                width={393}
+                height={852}
+                loading="lazy"
+                decoding="async"
+              />
+            )}
+            <iframe
+              class="live-frame"
+              data-frame
+              title={`${work.title}, live`}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
+              allow="fullscreen; clipboard-write"
+              referrerpolicy="strict-origin-when-cross-origin"
+            />
+          </figure>
+        ) : work.video ? (
+          <figure class="moment" style="--r: 1.6">
+            <a class="moment-link" href={work.liveHref} {...link} aria-label={visitAria}>
+              <video
+                src={work.video}
+                poster={shotSrc(work.slug, work.cover, largest(work.cover))}
+                style={`view-transition-name: shot-${work.slug}`}
+                muted
+                loop
+                playsinline
+                autoplay
+                preload="metadata"
+                data-video
+              />
+              <span class="visit" aria-hidden="true">{visitLabel} ↗</span>
+            </a>
+          </figure>
+        ) : (
+          moments.map((moment, i) => (
+            <figure
+              class:list={['moment', { 'is-phone': moment.device === 'phone' }]}
+              style={`--r: ${moment.device === 'phone' ? moment.ratio : 1.6}`}
+              data-moment={moment.id}
+              hidden={i !== 0}
+            >
+              <MomentLink class="moment-link" {...momentLink}>
+                <img
+                  src={shotSrc(work.slug, moment, largest(moment))}
+                  srcset={shotSrcset(work.slug, moment)}
+                  sizes={moment.device === 'phone' ? '24vw' : '(max-width: 760px) 100vw, 70vw'}
+                  alt={`${work.title}: ${moment.name}`}
+                  width={moment.device === 'phone' ? 393 : 1440}
+                  height={moment.device === 'phone' ? Math.round(393 / moment.ratio) : 900}
+                  style={i === 0 ? `view-transition-name: shot-${work.slug}` : undefined}
+                  loading={i === 0 ? 'eager' : 'lazy'}
+                  fetchpriority={i === 0 ? 'high' : undefined}
+                  decoding="async"
+                />
+                {work.liveHref && <span class="visit" aria-hidden="true">{visitLabel} ↗</span>}
+              </MomentLink>
+            </figure>
+          ))
+        )}
+      </div>
+
+      {work.live && (
+        <div class="devices" data-devices>
+          <span class="live-status" aria-hidden="true">Live</span>
+          <button type="button" data-device-to="desktop" aria-pressed="true">Desktop</button>
+          <button type="button" data-device-to="phone" aria-pressed="false">Phone</button>
+          <a href={work.liveHref} {...link}>Open site ↗</a>
+        </div>
+      )}
+
+      {!work.live && !work.video && moments.length > 1 && (
+        <ol class="moment-index" aria-label="Parts of this work">
+          {moments.map((moment, i) => (
+            <li>
+              <button type="button" data-go={moment.id} data-note={moment.note ?? ''} aria-current={i === 0 ? 'true' : 'false'}>
+                ({i + 1})<span class="moment-name"> {moment.name}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+
+    <section class="spread-text phi">
+      <div class="cell a"><h1>{work.title}</h1></div>
+      <div class="cell b col">
+        {work.about && <p>{work.about}</p>}
+        {work.why && <p>{work.why}</p>}
+        {!work.live && !work.video && moments.length > 1 && <p class="note-out" data-note-out hidden={!moments[0].note}>{moments[0].note}</p>}
+        {work.films.length > 0 && <a class="read-more" href="#films">{work.films.length === 1 ? 'Film' : `Films (${work.films.length})`} ↓</a>}
+        {notes && <a class="read-more" href="#design">Read more ↓</a>}
+      </div>
+      <div class="cell c col">
+        <dl class="meta">
+          <div><dt>Year</dt><dd>{work.year}</dd></div>
+          {work.liveHref && (
+            <div>
+              <dt>Live</dt>
+              <dd><a href={work.liveHref} {...link}>{liveLabel}{isExternal && ' ↗'}</a></dd>
+            </div>
+          )}
+          {work.repo && (
+            <div>
+              <dt>GitHub</dt>
+              <dd><a href={work.repo} target="_blank" rel="noopener">{repoLabel} ↗</a></dd>
+            </div>
+          )}
+          {!work.frozen && <div><dt>Captured</dt><dd>{dateFormat.format(new Date(work.changedAt))}</dd></div>}
+        </dl>
+        <nav class="pager" aria-label="More work">
+          <a href={`/work/${previous.slug}`} rel="prev">← {previous.title}</a>
+          <a href={`/work/${next.slug}`} rel="next">{next.title} →</a>
+        </nav>
+      </div>
+    </section>
+    </div>
+
+    {(notes || work.films.length > 0) && (
+      <article class="notes" id="design" aria-label={`${work.title}: films and design notes`}>
+        {work.films.length > 0 && (
+          <section class="note phi" id="films">
+            <header class="cell a">
+              <p class="kicker">Films</p>
+              <h2>{work.films.length === 1 ? 'The film' : `${work.films.length} films`}</h2>
+              <p class="note-body">Promo films made for {work.title}. Click one to watch it with sound.</p>
+            </header>
+            <ul class="cell bc rows films-list">
+              {work.films.map((film) => (
+                <li>
+                  <button type="button" class="film" data-film={film.src} data-title={film.title} aria-label={`Play ${film.title}, ${filmLength(film.duration)}`}>
+                    <span class="feature">
+                      <span class="feature-name">{film.title}</span>
+                      <span class="film-meta">{film.kind} · {filmLength(film.duration)}</span>
+                    </span>
+                    <span class="film-frame" style={`--r: ${(film.width / film.height).toFixed(4)}`}>
+                      <img src={film.poster} alt="" loading="lazy" decoding="async" />
+                      <video src={film.loop} muted loop playsinline preload="none" aria-hidden="true" tabindex="-1" data-film-loop />
+                      <span class="film-play" aria-hidden="true">▶ Play</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {shotLists.map(({ kicker, list }) => (
+          <section class="note phi">
+            <header class="cell a">
+              <p class="kicker">{kicker}</p>
+              <h2>{list.title}</h2>
+              {list.intro && <p class="note-body">{list.intro}</p>}
+            </header>
+            <ul class="cell bc rows features">
+              {list.items.map((item) => {
+                const shot = momentOf(item.shot);
+                return shot ? (
+                  <li class="has-shot">
+                    <div class="feature">
+                      <span class="feature-name">{item.name}</span>
+                      <p class="feature-text">{item.text}</p>
+                    </div>
+                    <NoteShot slug={work.slug} title={work.title} moment={shot} />
+                  </li>
+                ) : (
+                  <li>
+                    <span class="feature-name">{item.name}</span>
+                    <p class="feature-text">{item.text}</p>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        ))}
+
+        {notes?.interface && (
+          <section class="note phi">
+            <header class="cell a">
+              <p class="kicker">Interface</p>
+              <h2>{notes.interface.title}</h2>
+            </header>
+            <div class="cell b note-body">{notes.interface.body.map((p) => <p>{p}</p>)}</div>
+            <div class="cell c">
+              {noteShot && <NoteShot slug={work.slug} title={work.title} moment={noteShot} />}
+            </div>
+          </section>
+        )}
+
+        {notes?.palette && tiling && (
+          <section class="note phi">
+            <header class="cell a">
+              <p class="kicker">Palette</p>
+              <h2>{notes.palette.title}</h2>
+              <p class="note-body">{notes.palette.body}</p>
+              <ul class="legend">
+                {colors.map((c) => (
+                  <li>
+                    <span class="chip" style={`background: ${c.value}`} />
+                    <span class="legend-name">{c.name}</span>
+                    <span class="legend-role">{c.role}</span>
+                  </li>
+                ))}
+              </ul>
+            </header>
+            <div class="cell bc">
+              <div class="tiling" style={`aspect-ratio: ${tiling.width} / ${tiling.height}`} role="img" aria-label={`Palette: ${colors.map((c) => c.name).join(', ')}`}>
+                {tiling.tiles.map((t, i) => (
+                  <span
+                    class:list={['swatch', { 'on-dark': !isLight(colors[i].value) }]}
+                    style={`left: ${(t.x / tiling.width) * 100}%; top: ${(t.y / tiling.height) * 100}%; width: ${(t.size / tiling.width) * 100}%; height: ${(t.size / tiling.height) * 100}%; background: ${colors[i].value}`}
+                  >
+                    <span class="swatch-label">{colors[i].value.startsWith('#') ? colors[i].value : 'gradient'}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {notes?.type && (
+          <section class="note phi">
+            <header class="cell a">
+              <p class="kicker">Type</p>
+              <h2>{notes.type.title}</h2>
+              <p class="note-body">{notes.type.body}</p>
+            </header>
+            <ul class="cell bc rows faces">
+              {notes.type.faces.map((f) => (
+                <li>
+                  <span class="glyph" style={face(f)} aria-hidden="true">Aa</span>
+                  <div class="face">
+                    <p class="face-name">{f.family}</p>
+                    <p class="face-role">{f.role}</p>
+                    <p class="face-sample" style={face(f)}>{f.sample}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <nav class="note phi note-next" aria-label="More work">
+          <a class="cell a" href={`/work/${previous.slug}`} rel="prev"><span class="kicker">Previous</span><span class="next-title">← {previous.title}</span></a>
+          <span class="cell b" />
+          <a class="cell c" href={`/work/${next.slug}`} rel="next"><span class="kicker">Next</span><span class="next-title">{next.title} →</span></a>
+        </nav>
+      </article>
+    )}
+  </main>
+
+  {work.films.length > 0 && (
+    <dialog class="player" data-player aria-label="Film">
+      <div class="player-bar">
+        <p class="player-title" data-player-title></p>
+        <button type="button" class="player-close" data-player-close>Close ✕</button>
+      </div>
+      <video class="player-video" controls playsinline preload="none" data-player-video></video>
+    </dialog>
+  )}
+
+  <script>
+    import { startSpread } from '../../scripts/gallery-spread';
+    import { startFilms } from '../../scripts/films';
+    startSpread();
+    startFilms();
+  </script>
+</GalleryLayout>

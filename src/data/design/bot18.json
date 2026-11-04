@@ -1,0 +1,61 @@
+{
+  "features": {
+    "title": "From footage to a policy that checks itself",
+    "intro": "Bot18 is a one-day build on Gemini 4 Argon. Argon reads robot footage, builds a sim, writes its own reward from the video, practises and compiles what works into cheap routines. Everything is sim only, and this page shows the evidence for each step.",
+    "items": [
+      {
+        "name": "Brain switch",
+        "text": "Results from Argon and from Claude, which stood in for it, stay apart. A switch shows one brain or both side by side, never merged into one number.",
+        "shot": "read"
+      },
+      {
+        "name": "Data tracks",
+        "text": "Each data track, such as REASSEMBLE robot recordings or LIBERO sim demos, goes through the same loop. Picking one switches the whole page to that track's clips, steps and numbers.",
+        "shot": "libero"
+      },
+      {
+        "name": "Evidence cards",
+        "text": "Every tile, clip, result and skill tag opens a card with the long read. A footage card plays all the camera views of one moment side by side, in sync.",
+        "shot": "footage"
+      },
+      {
+        "name": "Compiled routines",
+        "text": "Argon compiles what worked into a routine that needs no brain calls. On 24 unseen starts it seated the part 8 times, against 5 for Claude's routine, in under a quarter of the sim time.",
+        "shot": "compile"
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "read",
+      "name": "Argon reads the footage",
+      "device": "desktop",
+      "steps": [{ "click": "button[data-go=\"A\"]", "wait": 2500 }]
+    },
+    {
+      "id": "libero",
+      "name": "The LIBERO track",
+      "device": "desktop",
+      "steps": [{ "click": "[data-track=\"libero\"]", "wait": 1500 }]
+    },
+    {
+      "id": "footage",
+      "name": "Footage card",
+      "device": "desktop",
+      "steps": [{ "click": "[data-open=\"explain|input|0\"]", "wait": 2500 }]
+    },
+    {
+      "id": "compile",
+      "name": "Practice compiles into routines",
+      "device": "desktop",
+      "steps": [{ "click": "button[data-go=\"E\"]", "wait": 2500 }]
+    }
+  ],
+  "sources": [
+    "arg_twin/README.md",
+    "arg_twin/docs/design/ui-protocol.md",
+    "arg_twin/docs/presentation.md",
+    "arg_twin/harness/status_template.html",
+    "https://bot18-page.vercel.app/"
+  ]
+}

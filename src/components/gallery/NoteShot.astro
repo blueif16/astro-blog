@@ -1,0 +1,25 @@
+---
+// A picture in the design notes, whole, at the shape it was taken.
+import { largest, shotSrc, shotSrcset, type Moment } from '../../data/work';
+
+interface Props {
+  slug: string;
+  title: string;
+  moment: Moment;
+}
+const { slug, title, moment } = Astro.props;
+const phone = moment.device === 'phone';
+---
+
+<figure class:list={['note-shot', { 'is-phone': phone }]} style={`--r: ${phone ? moment.ratio : 1.6}`}>
+  <img
+    src={shotSrc(slug, moment, largest(moment))}
+    srcset={shotSrcset(slug, moment)}
+    sizes={phone ? '20vw' : '(max-width: 760px) 100vw, 36vw'}
+    alt={`${title}: ${moment.name}`}
+    width={phone ? 393 : 1440}
+    height={phone ? Math.round(393 / moment.ratio) : 900}
+    loading="lazy"
+    decoding="async"
+  />
+</figure>

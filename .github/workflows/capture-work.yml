@@ -1,0 +1,106 @@
+# Keeps the pictures in the frontend gallery matching the live sites.
+#
+# Every hour it asks Vercel which deployment is live for each URL in src/data/work.config.mjs. When
+# one is new, or the config changed, it retakes those pictures and commits them if they look
+# different, and that push rebuilds the site. A run with nothing new takes seconds.
+#
+# Polling, because the Hobby plan has no account webhooks and these frontends are deployed from
+# the CLI with no Git link, so neither Vercel nor GitHub has an event to send.
+#
+# Secret: VERCEL_TOKEN (vercel.com/account/tokens). Without it, sites are compared by ETag or HTML
+# hash instead, which misses a deploy that only changes unhashed CSS or JS files.
+#
+# Retake everything by hand: gh workflow run capture-work.yml -f force=true
+
+name: Capture frontends
+
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Retake every picture
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - src/data/work.config.mjs
+      - scripts/capture/**
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: capture-frontends
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Recall what was live last time
+        uses: actions/cache/restore@v6
+        with:
+          path: scripts/capture/.seen.json
+          key: seen-${{ github.run_id }}
+          restore-keys: seen-
+
+      - name: Look for new deployments
+        id: check
+        run: node scripts/capture/capture.mjs --check
+
+      - name: Install the browser
+        if: steps.check.outputs.stale == 'true' || inputs.force
+        run: |
+          npm ci --prefix scripts/capture
+          npx --prefix scripts/capture playwright install --with-deps chromium
+          sudo apt-get install -y fonts-noto-cjk
+
+      - name: Take the pictures
+        id: take
+        if: steps.check.outputs.stale == 'true' || inputs.force
+        run: node scripts/capture/capture.mjs ${{ inputs.force && '--force' || '' }}
+
+      # Runs even when some pictures failed: the good ones still go out, and the failed step
+      # above marks the run red so GitHub sends an email.
+      - name: Publish what changed
+        if: ${{ !cancelled() && steps.take.conclusion != 'skipped' }}
+        run: |
+          git add public/shots src/data/work.manifest.json
+          if git diff --cached --quiet; then
+            echo "The pictures look the same. Nothing to publish."
+            exit 0
+          fi
+          # Same author as every other commit here, so Vercel treats it the same way.
+          git config user.name blueif16
+          git config user.email 174511826+blueif16@users.noreply.github.com
+          git commit -m "chore(work): update gallery pictures from the live sites"
+          git pull --rebase origin main
+          git push
+
+      - name: Remember what is live now
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v6
+        with:
+          path: scripts/capture/.seen.json
+          key: seen-${{ github.run_id }}
+
+      # GitHub turns off scheduled workflows after 60 days without commits, and this repo can sit
+      # idle for months while the blog updates from the vault. This keeps the schedule on.
+      - name: Keep the schedule on
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow enable capture-work.yml

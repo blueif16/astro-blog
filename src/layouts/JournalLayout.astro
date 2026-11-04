@@ -1,0 +1,30 @@
+---
+// The blog and the feed, in the gallery's language: the same top bar, paper, type and golden
+// columns (GalleryLayout + gallery.css), with reading pages set in src/styles/journal.css.
+import GalleryLayout from './GalleryLayout.astro';
+import '../styles/journal.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  /** Which part of the site this page belongs to; marks its link in the top bar. */
+  area: 'blog' | 'feed';
+  /** A reading page: a thin line under the bar shows how far down the page you are. */
+  reading?: boolean;
+}
+
+const { title, description, image, area, reading = false } = Astro.props;
+---
+
+<GalleryLayout title={title} description={description} image={image}>
+  <link
+    slot="head"
+    rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,600;1,400;1,500;1,600&display=swap"
+  />
+  {reading && <div class="j-progress" aria-hidden="true" />}
+  <main id="main" class="journal" data-area={area}>
+    <slot />
+  </main>
+</GalleryLayout>

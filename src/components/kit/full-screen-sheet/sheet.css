@@ -1,0 +1,220 @@
+/* Full-screen sheet (from the appify landing page): a nav tab opens a full-screen view over the
+   page with a top-down wipe; the same tab closes it, the other tab swaps views, Escape closes.
+   Plain CSS, no build step. Sections: tokens, the page nav (its tabs open the sheet), the sheet,
+   small screens, reduced motion. Fonts: Inter, IBM Plex Mono, Bricolage Grotesque (see index.html). */
+
+/* Tokens. The page side (nav) reads these; the sheet keeps its own dark set on .sheet below.
+   Rename them if your site already uses these names for something else. */
+:root {
+  --ink: #1d1d1f;
+  --fill: #f5f5f7;
+  --sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  --display: 'Bricolage Grotesque', Inter, -apple-system, system-ui, sans-serif;
+  /* The open tab's underline. Any colour or gradient works. */
+  --holo: linear-gradient(135deg, #ffb3d9, #c3b2ff 28%, #9edcff 52%, #b6f5cf 76%, #ffeaa0);
+  --gutter: clamp(16px, 4vw, 40px);
+}
+
+/* The page's resets these parts relied on. */
+:where(.nav, .sheet), :where(.nav, .sheet) * { box-sizing: border-box; }
+:where(.nav-tab, .sheet-close) { font: inherit; color: inherit; }
+.sheet [hidden] { display: none !important; }
+.nav :focus-visible { outline: 2px solid #000; outline-offset: 2px; }
+
+/* The page nav: logo, the tabs that open the sheet, anything else at the end. */
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  max-width: 1240px;
+  height: 64px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #000;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+.logo svg { flex: none; }
+.nav-links { display: flex; gap: 4px; }
+.nav-tab {
+  position: relative;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+.nav-tab:hover { background: var(--fill); }
+.nav-tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 2px;
+  height: 2px;
+  background: var(--holo);
+}
+.nav-end { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* The sheet: full screen over the page. */
+
+.sheet {
+  --s-ink: #f2f2f4;
+  --s-ink-2: #a1a1a8;
+  --s-ink-3: #6e6e75;
+  --s-line: #2e2e32;
+  --s-fill: #19191b;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: #0b0b0c;
+  color: var(--s-ink);
+  color-scheme: dark;
+  font: 16px/1.5 var(--sans);
+}
+.sheet::backdrop { background: transparent; }
+.sheet[open] { animation: sheet-in 0.56s cubic-bezier(0.76, 0, 0.24, 1); }
+.sheet.is-closing { animation: sheet-out 0.42s cubic-bezier(0.76, 0, 0.24, 1) forwards; }
+@keyframes sheet-in { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+@keyframes sheet-out { from { clip-path: inset(0); } to { clip-path: inset(0 0 100% 0); } }
+html:has(.sheet[open]) { overflow: hidden; }
+.sheet :focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+
+.sheet-inner {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+/* The sheet's top bar repeats the page nav, so the tabs stay put while the view changes. */
+.sheet-top { display: flex; flex: none; align-items: center; gap: 40px; height: 64px; }
+.sheet .logo { color: #fff; }
+.sheet-tabs { display: flex; gap: 4px; }
+.sheet .nav-tab { color: var(--s-ink); }
+.sheet .nav-tab:hover { background: var(--s-fill); }
+.sheet-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding: 8px 10px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font: 500 12px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.sheet-close span { padding-bottom: 2px; border-bottom: 1px solid currentColor; }
+.sheet-close:hover { background: var(--s-fill); }
+
+/* A view: a main column and a side column; its children rise in each time it shows. */
+.sheet-view {
+  display: grid;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-content: start;
+  gap: 48px clamp(32px, 5vw, 80px);
+  padding: clamp(28px, 4vw, 52px) 0 48px;
+}
+.sheet-view > * { animation: sheet-rise 0.5s 0.12s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.sheet-view > .sheet-side { animation-delay: 0.2s; }
+@keyframes sheet-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+.sheet-label {
+  margin: 0 0 14px;
+  color: var(--s-ink-3);
+  font: 500 11px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Big display lines, each with a small line under it; .big-list-steps adds 01, 02… */
+.big-list { margin: 0; padding: 0; list-style: none; }
+.big-list li { display: grid; padding-bottom: clamp(12px, 1.4vw, 18px); }
+.big {
+  color: var(--s-ink);
+  font-family: var(--display);
+  font-size: clamp(40px, 5.4vw, 74px);
+  font-weight: 500;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+.big-sub { max-width: 34em; margin-top: 6px; color: var(--s-ink-2); font-size: 14.5px; line-height: 1.45; }
+.big-sub code { color: var(--s-ink); font: 12.5px var(--mono); }
+.big-list-steps li { grid-template-columns: 2.4em minmax(0, 1fr); }
+.big-list-steps .big { font-size: clamp(34px, 4.1vw, 54px); }
+.big-n { grid-row: span 2; padding-top: 0.75em; color: var(--s-ink-3); font: 500 11px var(--mono); }
+
+/* Side column: up to three small lists side by side. */
+.sheet-side {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: start;
+  gap: 36px 28px;
+}
+.small-list { margin: 0; padding: 0; list-style: none; }
+.small-list li { padding: 3px 0; color: var(--s-ink); font-size: 14.5px; line-height: 1.45; }
+.small-list.mono li { font: 13px/1.55 var(--mono); }
+
+.sheet-foot {
+  display: grid;
+  flex: none;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 0 calc(20px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid #3a3a3e;
+  color: var(--s-ink-2);
+  font-size: 14px;
+}
+.sheet-foot a { justify-self: start; color: #fff; text-decoration: none; }
+.sheet-foot a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.sheet-foot-mark { color: #fff; font-family: var(--display); font-size: 22px; font-weight: 600; letter-spacing: -0.03em; }
+.sheet-foot > :last-child { justify-self: end; }
+
+/* Tablets and phones */
+
+@media (max-width: 1020px) {
+  .sheet-view { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 720px) {
+  .nav { gap: 12px; height: 56px; }
+  .nav-tab { padding: 8px; }
+  .sheet-top { gap: 12px; height: 56px; }
+  .sheet-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sheet-foot { grid-template-columns: 1fr auto; }
+  .sheet-foot > :last-child { display: none; }
+}
+
+@media (max-width: 560px) {
+  .big { font-size: clamp(36px, 11vw, 46px); }
+  .big-list-steps .big { font-size: clamp(30px, 9vw, 40px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open], .sheet.is-closing, .sheet-view > * { animation: none; }
+}

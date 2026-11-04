@@ -9,9 +9,13 @@ interface Props {
   title: string;
   description?: string;
   sections?: { id: string; label: string }[];
+  /** Where the nav's home link goes and what it's called. */
+  home?: { href: string; label: string };
+  /** An earlier version of the site: hide it from search and offer the way back. */
+  archived?: boolean;
 }
 
-const { title, description, sections } = Astro.props;
+const { title, description, sections, home, archived } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -21,13 +25,14 @@ const { title, description, sections } = Astro.props;
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
   {description && <meta name="description" content={description} />}
+  {archived && <meta name="robots" content="noindex" />}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Noto+Serif+SC:wght@300;400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 </head>
 <body>
 
-<SiteNav currentPath={Astro.url.pathname} />
+<SiteNav currentPath={Astro.url.pathname} home={home} />
 {sections && sections.length > 0 && <SectionTracker sections={sections} />}
 
 <!-- Custom cursor -->
@@ -45,6 +50,18 @@ const { title, description, sections } = Astro.props;
 </div>
 
 <slot />
+
+{archived && (
+  <p class="archived-note">
+    An earlier version of this site. <a href="/work" data-cursor-hover>See the current one</a>
+  </p>
+)}
+{archived && (
+  <script is:inline>
+    // Shown live inside the gallery's own page: a link back to the gallery would open it in the frame.
+    if (window.top !== window.self) document.querySelector('.archived-note')?.remove();
+  </script>
+)}
 
 </body>
 </html>
@@ -85,6 +102,16 @@ const { title, description, sections } = Astro.props;
     transition: width 0.3s ease, height 0.3s ease;
   }
   .custom-cursor.hovering { width: 44px; height: 44px; }
+
+  .archived-note {
+    position: fixed;
+    right: 20px;
+    bottom: 16px;
+    z-index: 9980;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .archived-note a { color: var(--text); text-underline-offset: 2px; cursor: none; }
 </style>
 
 <script>

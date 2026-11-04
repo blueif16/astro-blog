@@ -2,12 +2,13 @@
 interface Props {
   wordmark?: string;
   currentPath?: string;
+  home?: { href: string; label: string };
 }
 
-const { wordmark = 'shiran', currentPath = Astro.url.pathname } = Astro.props;
+const { wordmark = 'shiran', currentPath = Astro.url.pathname, home = { href: '/', label: 'Work' } } = Astro.props;
 
 const pages = [
-  { href: '/', label: 'About' },
+  home,
   { href: '/blog', label: 'Blog' },
   { href: '/feed', label: 'Feed' },
 ];
@@ -15,14 +16,14 @@ const pages = [
 
 <nav class="fn" id="float-nav">
   <div class="fn-mark-zone" id="fn-mark-zone">
-    <a href="/" class="fn-mark" data-cursor-hover>{wordmark}</a>
+    <a href={home.href} class="fn-mark" data-cursor-hover>{wordmark}</a>
   </div>
   <span class="fn-sep"></span>
   <div class="fn-links">
     {pages.map(p => (
       <a
         href={p.href}
-        class:list={['fn-link', { 'fn-active': p.href === '/' ? currentPath === '/' : currentPath.startsWith(p.href) }]}
+        class:list={['fn-link', { 'fn-active': p.href === home.href ? currentPath.replace(/\/$/, '') === home.href.replace(/\/$/, '') : currentPath.startsWith(p.href) }]}
         data-cursor-hover
       >
         {p.label}

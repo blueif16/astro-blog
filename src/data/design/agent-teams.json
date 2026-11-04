@@ -1,0 +1,61 @@
+{
+  "features": {
+    "title": "Channels of agents you can walk away from",
+    "intro": "Each channel is a team of agents working toward one goal, and each agent has a mascot, a plan and a live status. Agents reply in character through models on Crusoe. They don't carry out the work yet.",
+    "items": [
+      {
+        "name": "Reactions are orders",
+        "text": "Click an agent's message for five quick orders: go ahead, dig in, redo, hold and remember. The agent replies quoting the order, and Remember adds a standing instruction to its SOUL.md.",
+        "shot": "orders"
+      },
+      {
+        "name": "Mira, the CEO",
+        "text": "Mira sits at the bottom of the rail with shortcuts for progress, top performers and reorganizing. Ask her to start a project and she proposes a team; Launch creates its channel.",
+        "shot": "mira"
+      },
+      {
+        "name": "Charts in replies",
+        "text": "An agent can answer with a chart. It writes a small JSON block of data, never drawing code, and the app draws it from one of six templates, with a table view.",
+        "shot": "charts"
+      },
+      {
+        "name": "Team overview",
+        "text": "The team overview lists every agent with its status, what it is doing now and its progress. Status lives in one place, so the mascots and chips in the chat, panel and sidebar always match.",
+        "shot": "team"
+      }
+    ]
+  },
+  "capture": [
+    {
+      "id": "orders",
+      "name": "Reactions are orders",
+      "device": "desktop",
+      "steps": [{ "click": "text=Heads-up: the" }]
+    },
+    {
+      "id": "mira",
+      "name": "Mira, the CEO",
+      "device": "desktop",
+      "steps": [{ "click": "[aria-label=\"Mira, your CEO\"]" }]
+    },
+    {
+      "id": "charts",
+      "name": "Charts in replies",
+      "device": "desktop",
+      "steps": [{ "click": "button:has-text(\"data-pulse\")", "wait": 1500 }]
+    },
+    {
+      "id": "team",
+      "name": "Team overview",
+      "device": "desktop",
+      "steps": [{ "click": "[aria-label=\"Team overview\"]" }]
+    }
+  ],
+  "sources": [
+    "agent-teams/README.md",
+    "agent-teams/DECISIONS.md",
+    "agent-teams/.claude/skills/agent-teams-ui/SKILL.md",
+    "agent-teams/src/lib/data.ts",
+    "https://agent-teams-mu.vercel.app/"
+  ]
+}

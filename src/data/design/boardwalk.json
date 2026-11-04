@@ -1,0 +1,39 @@
+{
+  "features": {
+    "title": "The whole park on one painted screen",
+    "intro": "The Santa Cruz Beach Boardwalk is repainted from the official park map as one pastel storybook picture that always fills the window. Animals walk the boardwalk and ride the rides, and the light follows the visitor's own clock.",
+    "items": [
+      { "name": "Animals on rides", "text": "120 animals of 35 species walk to the rides, queue at the gates and board. They ride all eight passenger rides, from the Giant Dipper to the teacups, and step off at the exit.", "shot": "map" },
+      { "name": "Any hour", "text": "The light follows the visitor's clock. Tapping the corner clock opens a strip to drag through the day or play it in 24 seconds. After dusk the lamps, stalls and town windows light up.", "shot": "night" },
+      { "name": "Find the corgi", "text": "A corgi hides in one of seven spots and gives itself away by moving where the painting is still. Click it and it runs off to hide again. The badge counts the spots found.", "shot": "corgi" }
+    ]
+  },
+  "capture": [
+    {
+      "id": "night",
+      "name": "After dark",
+      "steps": [
+        { "click": ".sky-clock .badge", "wait": 600 },
+        { "click": ".sky-clock input[type=range]", "wait": 600 },
+        { "press": "End", "wait": 300 },
+        { "press": "PageDown", "wait": 5000 }
+      ]
+    },
+    {
+      "id": "corgi",
+      "name": "Find the corgi",
+      "steps": [{ "click": ".corgi-badge", "wait": 1500 }]
+    }
+  ],
+  "sources": [
+    "boardwalk/README.md",
+    "boardwalk/STYLE.md",
+    "boardwalk/CLAUDE.md",
+    "boardwalk/NEXT_SESSION.md",
+    "boardwalk/index.html",
+    "boardwalk/rides/sky/layer.js",
+    "boardwalk/rides/lights/layer.js",
+    "boardwalk/rides/corgi/layer.js",
+    "https://boardwalk-alpha.vercel.app/"
+  ]
+}

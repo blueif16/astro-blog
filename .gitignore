@@ -34,3 +34,21 @@ website/
 
 # keep migrated blog post images (override the *.png rule above)
 !public/blog/**
+
+# Frontend gallery capture
+scripts/capture/node_modules/
+scripts/capture/.seen.json
+# the gallery's design references (override the *.png rule above)
+!docs/design-references/**
+
+# Web copies of promo films, made before upload
+scripts/films/.work/
+
+# The Boardwalk park at the front of the site (scripts/boardwalk/sync.sh); keep its PNGs
+!public/base/**
+!public/rides/**
+!public/site/**
+!public/tests/**
+!public/vendor/**
+.env*
+!public/apple-touch-icon.png

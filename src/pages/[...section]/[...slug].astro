@@ -1,21 +1,35 @@
 ---
-import PostLayout from '../../layouts/PostLayout.astro';
+// A post, set like a project page's spread text: the title on the left, the lede in the narrow
+// column, the facts on the right. Then the text to the right of the first cut, its contents held in
+// view on the left, and the way to the posts before and after it at the end.
+import JournalLayout from '../../layouts/JournalLayout.astro';
+import Contents from '../../components/journal/Contents.astro';
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
+import { contentsOf, fmtDay, readingMinutes, tidy } from '../../utils/journal';
 
 export async function getStaticPaths() {
   const sections = ['blog'];
 
   const paths = await Promise.all(
     sections.map(async (section) => {
-      const entries = await getCollection(section as any);
-      return entries.map((entry) => ({
-        params: {
-          section,
-          slug: entry.id,
-        },
-        props: { entry, section },
-      }));
+      const entries = await getCollection(section as 'blog');
+      // In time order, so "previous" is the post written before this one.
+      const listed = entries
+        .filter((e) => !e.data.draft)
+        .sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
+      return entries.map((entry) => {
+        const i = listed.findIndex((e) => e.id === entry.id);
+        return {
+          params: { section, slug: entry.id },
+          props: {
+            entry,
+            section,
+            previous: i > 0 ? listed[i - 1] : undefined,
+            next: i >= 0 && i < listed.length - 1 ? listed[i + 1] : undefined,
+          },
+        };
+      });
     })
   );
 
@@ -25,19 +39,63 @@ export async function getStaticPaths() {
 type Props = {
   entry: CollectionEntry<'blog'>;
   section: string;
+  previous?: CollectionEntry<'blog'>;
+  next?: CollectionEntry<'blog'>;
 };
 
-const { entry, section } = Astro.props;
-const { Content } = await render(entry);
+const { entry, section, previous, next } = Astro.props;
+const { Content, headings } = await render(entry);
+const sectionTitles: Record<string, string> = { blog: 'Blog' };
+const sectionName = sectionTitles[section] ?? section;
+const { title, date, tags } = entry.data;
+const description = tidy(entry.data.description) || undefined;
+const contents = contentsOf(headings);
 ---
 
-<PostLayout
-  title={entry.data.title}
-  description={entry.data.description}
-  date={entry.data.date}
-  tags={entry.data.tags}
-  content={entry.body}
-  section={section}
->
-  <Content />
-</PostLayout>
+<JournalLayout title={`${title}, Shiran Wang`} description={description} area="blog" reading>
+  <article>
+    <header class="j-head phi">
+      <div class="cell a">
+        <p class="kicker"><a href={`/${section}`}>← {sectionName}</a></p>
+        <h1 class="j-title">{title}</h1>
+      </div>
+      <div class="cell b col">
+        {description && <p>{description}</p>}
+        {contents.length > 1 && <a class="read-more" href={`#${contents[0].slug}`}>Start reading ↓</a>}
+      </div>
+      <div class="cell c col">
+        <dl class="meta">
+          <div><dt>Date</dt><dd><time datetime={date.toISOString()}>{fmtDay(date)}</time></dd></div>
+          <div><dt>Reading</dt><dd>{readingMinutes(entry.body)} min</dd></div>
+          <div><dt>Section</dt><dd><a href={`/${section}`}>{sectionName}</a></dd></div>
+          {tags.length > 0 && <div><dt>Tags</dt><dd>{tags.join(', ')}</dd></div>}
+        </dl>
+      </div>
+    </header>
+
+    <div class="j-body phi">
+      <div class="cell a"><Contents items={contents} /></div>
+      <div class="cell bc">
+        <div class="prose">
+          <Content />
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <nav class="phi note-next j-next" aria-label="More posts">
+    {previous ? (
+      <a class="cell a" href={`/${section}/${previous.id}`} rel="prev">
+        <span class="kicker">Previous</span>
+        <span class="next-title">← {previous.data.title}</span>
+      </a>
+    ) : <span class="cell a" />}
+    <span class="cell b"><a class="j-all" href={`/${section}`}>All posts</a></span>
+    {next ? (
+      <a class="cell c" href={`/${section}/${next.id}`} rel="next">
+        <span class="kicker">Next</span>
+        <span class="next-title">{next.data.title} →</span>
+      </a>
+    ) : <span class="cell c" />}
+  </nav>
+</JournalLayout>
