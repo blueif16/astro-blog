@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<base href="https://promos.infinityopus.com/park/c010f15a68/">
+<base href="https://promos.infinityopus.com/park/c4a64c54cd/">
 <link rel="preconnect" href="https://promos.infinityopus.com" crossorigin>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Santa Cruz Boardwalk</title>
@@ -304,7 +304,7 @@ await new Promise((done) => { waveDone = () => { if (firstWave.every((n) => stat
 if (params.get("crowd") !== "0") {
   crumb("loading crowd");
   const { mountCrowd } = await import("./tests/park-crowd/crowd.js");
-  crowd = await mountCrowd(document.getElementById("animals"), { params, clock, rides: riderBlocks, occluders, view, density });
+  crowd = await mountCrowd(document.getElementById("animals"), { params, clock, rides: riderBlocks, occluders, view, density, lite: LITE });
   crowd.resize(scale);
   performance.mark("alive:crowd");
 }
