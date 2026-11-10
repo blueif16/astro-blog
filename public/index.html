@@ -213,8 +213,12 @@ const titleOpts = {
   },
   mode: () => (inFrame() ? { align: "centre", place: params.get("titleAt") === "middle" ? "middle" : "bottom" } : { align: "left", place: "bottom" }),
 };
+// Modules loaded later go through load(): WebKit (Safari and every iPhone browser, checked in WebKit 26.4) resolves a
+// relative path in an inline script's import() against the page's own URL, not its <base>, so on the site (page on Vercel, files on
+// R2) every such import 404'd on iPhones and only the painting showed (2026-11-10). Static imports follow the <base>.
+const load = (path) => import(new URL(path, document.baseURI).href);
 Promise.all([
-  import("./site/title/title.js").then((m) => m.mountTitle(document.getElementById("title"), titleOpts)),
+  load("./site/title/title.js").then((m) => m.mountTitle(document.getElementById("title"), titleOpts)),
   shown,
 ]).then(([title]) => title.play()).catch((err) => console.error("title failed", err));
 
@@ -331,7 +335,7 @@ async function mountRide(name) {
     addPatch(url, rect) { const img = ctx.addPatch(url, rect); if (mounting) { img.style.visibility = "hidden"; patches.push(img); } return img; } };
   try {
     crumb(`loading ${name}`);
-    const mod = await import(`./rides/${name}/layer.js`);
+    const mod = await load(`./rides/${name}/layer.js`);
     const layer = (await mod.mount(rideCtx)) || {};
     mounting = false;
     await Promise.all(patches.map((img) => img.decode().catch(() => {})));
@@ -364,7 +368,7 @@ await new Promise((done) => { waveDone = () => { if (firstWave.every((n) => stat
 
 if (params.get("crowd") !== "0" && !STILL && !ART) {
   crumb("loading crowd");
-  const { mountCrowd } = await import("./tests/park-crowd/crowd.js");
+  const { mountCrowd } = await load("./tests/park-crowd/crowd.js");
   crowd = await mountCrowd(document.getElementById("animals"), { params, clock, rides: riderBlocks, occluders, view, density, lite: LITE });
   crowd.resize(scale);
   performance.mark("alive:crowd");

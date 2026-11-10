@@ -81,6 +81,10 @@ function page() {
   // The park has no icon of its own; give it the site's (the Ran Studio seal).
   swap('<link rel="icon" href="data:,">', `<link rel="icon" href="${SITE}/favicon.svg" type="image/svg+xml"><link rel="icon" href="${SITE}/favicon.ico" sizes="32x32"><link rel="apple-touch-icon" href="${SITE}/apple-touch-icon.png">`, "set the park's icon");
   if (/(?:href|src)="\/[^/]/.test(html)) throw new Error('index.html has a root-relative URL, which the <base> would send to R2');
+  // WebKit (every iPhone browser) resolves a relative path in an inline script's import() against the page's URL, not the <base>:
+  // on this site that 404s and the park never starts (2026-11-10). The page's load() resolves against document.baseURI.
+  const relImport = html.match(/\bimport\(\s*[`'"]\.{0,2}\/[^)]*\)/);
+  if (relImport) throw new Error(`index.html has ${relImport[0]}: iPhones resolve it against the page, not the <base>; use load()`);
   return html;
 }
 const html = page();
