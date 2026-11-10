@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<base href="https://promos.infinityopus.com/park/c010f15a68/">
+<link rel="preconnect" href="https://promos.infinityopus.com" crossorigin>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Santa Cruz Boardwalk</title>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="icon" href="/favicon.ico" sizes="32x32"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" href="https://me.infinityopus.com/favicon.svg" type="image/svg+xml"><link rel="icon" href="https://me.infinityopus.com/favicon.ico" sizes="32x32"><link rel="apple-touch-icon" href="https://me.infinityopus.com/apple-touch-icon.png">
 <style>
   :root { --page: #f6f1ea; --card: #fffdf9; --line: #e4dbd0; --ink: #362223; --text: #5d4a47; }
   * { box-sizing: border-box; }
@@ -126,7 +128,7 @@ const W = 3840, H = 2560;
 const world = document.getElementById("world");
 const params = new URLSearchParams(location.search);
 // Explore (the title's button fires "explore" on window) leaves for the original site for now; &explore= overrides.
-const EXPLORE = params.get("explore") ?? "/work";
+const EXPLORE = params.get("explore") ?? new URL("/work", location.origin).href;
 addEventListener("explore", () => { location.href = EXPLORE; });
 // The link itself goes there too (a middle click, a new tab), and never to "#explore", which a <base> on another host
 // would turn into a page on that host.

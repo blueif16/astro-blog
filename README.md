@@ -75,7 +75,7 @@ npm run dev  # http://localhost:4321
 
 ## Frontend gallery
 
-The site at https://me.infinityopus.com opens on the Boardwalk park (`/`, copied in by `scripts/boardwalk/sync.sh`); its Explore button leads to the gallery at `/work`, which shows the work in `src/data/work.config.mjs`. **The full format for adding a product (pictures, notes, promo films) is in [docs/ADDING-WORK.md](docs/ADDING-WORK.md).** The shortest version: add a line and push:
+The site at https://me.infinityopus.com opens on the Boardwalk park (`/`: the page is `public/index.html`, its files are on Cloudflare R2 at `promos.infinityopus.com/park/<version>/`, both put there by `scripts/boardwalk/sync.sh`); its Explore button leads to the gallery at `/work`, which shows the work in `src/data/work.config.mjs`. **The full format for adding a product (pictures, notes, promo films) is in [docs/ADDING-WORK.md](docs/ADDING-WORK.md).** The shortest version: add a line and push:
 
 ```js
 { url: 'https://my-site.vercel.app/' },

@@ -76,7 +76,7 @@ Then run `node scripts/films/films.mjs --only=my-app`. It makes a 1080p copy, th
 
 Commit and push to `main`. Vercel builds https://me.infinityopus.com from it:
 
-- `/` is the Boardwalk park. After the park changes, run `bash scripts/boardwalk/sync.sh`.
+- `/` is the Boardwalk park. After the park changes, run `bash scripts/boardwalk/sync.sh`: it uploads the park's files to Cloudflare R2 and writes `public/index.html`. Commit `public/index.html` and `scripts/boardwalk/r2.json`, then push.
 - `/work` is the gallery.
 - `/blog` and `/feed` are the blog and the daily briefing.
 
