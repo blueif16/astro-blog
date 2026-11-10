@@ -162,7 +162,7 @@ void main() {
   outColor = vec4(d.rgb * a, a);
 }`;
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 export async function mount(ctx) {
   const { params, slots, W, H, dir } = ctx;
@@ -298,7 +298,7 @@ export async function mount(ctx) {
   painting?.addEventListener("load", () => { cropPainting(); });
 
   function resize(scale) {
-    const d = scale * Math.min(devicePixelRatio || 1, 1.25 / scale);
+    const d = (ctx.density ?? Number)(scale * Math.min(devicePixelRatio || 1, 1.25 / scale));
     const [vx0, vx1] = ctx.view?.() ?? [rx, rx + rw];
     const crop = vx0 > rx || vx1 < rx + rw; // else the whole rect, exactly as before
     const x0 = crop ? Math.floor(Math.min(rw, Math.max(0, vx0 - rx)) * d) / d : 0;

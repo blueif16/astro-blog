@@ -49,7 +49,7 @@ const SEAT_UP = [0, 5.5, 11];     // end-on views: each seat further back sits t
 import { rideHours } from "../../base/park_hours.js";
 import { getSky } from "../../base/sky.js";
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 // A small deterministic hash -> [0, 1).
 const hash = (n) => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
@@ -178,6 +178,7 @@ export async function mount(ctx) {
   };
   const cutout = (name, meta) => {
     const im = new Image();
+    im.crossOrigin = "anonymous";
     im.src = url(`occ_${name}.webp`);
     im.alt = "";
     const [x, y, w, h] = meta.rect;
@@ -200,7 +201,7 @@ export async function mount(ctx) {
   ];
   let density = 1;
   function resize(scale) {
-    density = scale * Math.min(devicePixelRatio || 1, 2 / scale);
+    density = (ctx.density ?? Number)(scale * Math.min(devicePixelRatio || 1, 2 / scale));
     for (const g of [back, front]) { g.canvas.width = Math.round(bw * density); g.canvas.height = Math.round(bh * density); }
   }
   resize(ctx.scale());

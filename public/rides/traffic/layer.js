@@ -28,7 +28,7 @@ const WALK_V = 15;              // walkers, px/s
 const ANIMAL = 38 * (3840 / 3904) / 30; // the crowd's size 38, as a scale on its atlas
 const BOX = [0, 440, 3840, 1150]; // park px covered by this layer's canvas
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 function rng(seed) {
   let a = seed >>> 0;
   const f = () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -220,7 +220,7 @@ export async function mount(ctx) {
   const g = canvas.getContext("2d");
   let density = 1;
   function resize(scale) {
-    density = scale * Math.min(devicePixelRatio || 1, 2 / scale);
+    density = (ctx.density ?? Number)(scale * Math.min(devicePixelRatio || 1, 2 / scale));
     canvas.width = Math.round(bw * density); canvas.height = Math.round(bh * density);
   }
   resize(ctx.scale());

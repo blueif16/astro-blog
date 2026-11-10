@@ -63,7 +63,7 @@ import { getSky } from "../../base/sky.js";
 
 const smooth = (e0, e1, x) => { const k = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return k * k * (3 - 2 * k); };
 const hash = (n) => { let x = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); x ^= x >>> 16; return (x >>> 0) / 4294967296; };
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 // The Typhoon's cycle: load car 0 at the bottom, half a turn, load car 1, swing up like a pendulum, loop, slow,
 // loop the other way, and stop with car 0 at the bottom. The final hold is sized so the arm lands there exactly; the
@@ -184,7 +184,7 @@ export async function mount(ctx) {
   const g = c.getContext("2d");
   let density = 1;
   function resize(scale) {
-    density = scale * Math.min(devicePixelRatio || 1, 2 / scale);
+    density = (ctx.density ?? Number)(scale * Math.min(devicePixelRatio || 1, 2 / scale));
     c.width = Math.round(bw * density); c.height = Math.round(bh * density);
   }
   resize(ctx.scale());

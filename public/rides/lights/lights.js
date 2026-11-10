@@ -14,7 +14,7 @@
 // lattice) are alpha masks sampled at each light's point, its moving ones (a cabin, a train) the layer reports itself.
 import { level, isTV, tvFlicker, windowColour, hash } from "./behaviour.js";
 
-const loadImage = (url) => new Promise((ok, fail) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => fail(new Error(url)); im.src = url; });
+const loadImage = (url) => new Promise((ok, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = () => fail(new Error(url)); im.src = url; });
 const hex = (s) => [1, 3, 5].map((i) => parseInt(s.slice(i, i + 2), 16) / 255);
 const rgba = (c, a = 1) => `rgba(${Math.round(c[0] * 255)},${Math.round(c[1] * 255)},${Math.round(c[2] * 255)},${a})`;
 

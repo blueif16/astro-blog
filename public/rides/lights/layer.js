@@ -48,7 +48,7 @@ export async function mount(ctx) {
     new URL("../streetlights/lights.json", ctx.dir).href,
     new URL("lights_streetlights.json", night).href,
   ];
-  const density = () => Math.min(1.5, Math.max(0.5, ctx.scale() * (devicePixelRatio || 1)));
+  const density = () => (ctx.density ?? Number)(Math.min(1.5, Math.max(0.5, ctx.scale() * (devicePixelRatio || 1))));
   const live = ["wheel", "coaster", "traffic", "carousel", "swings"].filter((n) => window[`__${n}`]);
   const lights = await mountLights(ctx, { inventories, parents, density: density(), skip: new Set(live.includes("coaster") ? ["coaster"] : []) });
   const adapters = { wheel: wheelLights, coaster: (c) => coasterLights(c, lights.inventory), traffic: trafficLights, carousel: carouselLights, swings: swingsLights };

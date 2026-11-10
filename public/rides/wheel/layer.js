@@ -44,7 +44,7 @@ const QUEUE = [[2578, 1476], [2563, 1478], [2548, 1480], [2533, 1482], [2518, 14
 import { rideHours } from "../../base/park_hours.js";
 import { getSky } from "../../base/sky.js";
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 const hash = (n) => { let x = Math.imul((n | 0) ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); x ^= x >>> 16; return (x >>> 0) / 4294967296; };
 const smooth = (e0, e1, x) => { const k = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return k * k * (3 - 2 * k); };
 
@@ -169,6 +169,7 @@ export async function mount(ctx) {
   };
   const g = canvasOver(bx, by, bw, bh);
   const legs = new Image();
+  legs.crossOrigin = "anonymous";
   legs.src = url("legs.webp");
   legs.alt = "";
   const [lx, ly, lw, lh] = meta.legs.rect;
@@ -179,7 +180,7 @@ export async function mount(ctx) {
 
   let density = 1;
   function resize(scale) {
-    density = Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1))); // at least 1.5 px per park px, shrunk by the browser: crisp at monitor size
+    density = (ctx.density ?? Number)(Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1)))); // at least 1.5 px per park px, shrunk by the browser: crisp at monitor size
     g.canvas.width = Math.round(bw * density); g.canvas.height = Math.round(bh * density);
     gh.canvas.width = Math.round(hb[2] * density); gh.canvas.height = Math.round(hb[3] * density);
   }

@@ -98,7 +98,7 @@ in vec2 vUv; in vec4 vCol;
 out vec4 color;
 void main() { color = texture(uTex, vUv, -0.4) * vCol; }`;
 
-const load = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const load = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 const clamp01 = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x);
 const smooth = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : (1 - Math.cos(Math.PI * x)) / 2);
 function hash(...xs) {
@@ -255,7 +255,7 @@ export async function mount(ctx) {
   const canvas = document.createElement("canvas");
   canvas.style.cssText = `position:absolute;left:${BOX[0]}px;top:${BOX[1]}px;width:${BOX[2]}px;height:${BOX[3]}px`;
   ctx.slots.rides.append(canvas);
-  const gl = canvas.getContext("webgl2", { premultipliedAlpha: true, antialias: true, alpha: true });
+  const gl = canvas.getContext("webgl2", { premultipliedAlpha: true, antialias: !ctx.lite, alpha: true });
   function program(vs, fs) {
     const p = gl.createProgram();
     for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]]) {
@@ -522,7 +522,7 @@ export async function mount(ctx) {
 
   let density = 1;
   function resize(scale) {
-    density = Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1)));
+    density = (ctx.density ?? Number)(Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1))));
     canvas.width = Math.round(BOX[2] * density);
     canvas.height = Math.round(BOX[3] * density);
   }

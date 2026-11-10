@@ -19,7 +19,7 @@ const UNIT = 3840 / 3904; // park px per Dipper-stage unit, the unit the size nu
 const KID_OF = { bear: "bear_cub", bunny: "bunny_kid", panda: "panda_kid", fox: "fox_kid", pig: "piglet", cat_orange: "kitten", lion: "lion_cub" };
 const KIDS = Object.values(KID_OF);
 const species = (look) => look.split("~")[0];
-const load = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const load = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 // Ride queues (rides/RIDERS.md): every riders block (and each entry of its `more`) becomes a queue place in the walking
 // graph, its tail linked to the nearest promenade lanes. Boarding follows the ride's load events on the page's clock.
@@ -140,7 +140,7 @@ function clearOfCutouts(walk, camera, pieces) {
 // hour: a function returning the hour of the day (or a number); by default the page's sky (base/sky.js: the visitor's
 // clock, &hour=, the badge's scrub and play), followed live. The park's hours (base/park_hours.js) close the ride
 // queues and stalls from 22:45 to 10:30.
-export async function mountCrowd(canvas, { params = new URLSearchParams(location.search), size = 38, count = 120, hour = null, sky = null, room = 1.5, rides: blocks = [], occluders = [], clock = createClock(), view = null } = {}) {
+export async function mountCrowd(canvas, { params = new URLSearchParams(location.search), size = 38, count = 120, hour = null, sky = null, room = 1.5, rides: blocks = [], occluders = [], clock = createClock(), view = null, density = null } = {}) {
   const skyNow = typeof hour === "function" || typeof hour === "number" ? null : sky ?? getSky({ params });
   const hourNow = typeof hour === "function" ? hour : typeof hour === "number" ? () => hour : () => { skyNow.tick?.(); return skyNow.hour; };
   const dir = new URL("./", import.meta.url);
@@ -259,8 +259,10 @@ export async function mountCrowd(canvas, { params = new URLSearchParams(location
     // are as crisp as the rides (Laplacian variance on them 4.6k -> 19.7k at 2560 x 1440). &crowdDensity= overrides.
     // view: a function returning the park x-range [x0, x1] the window shows (index.html's ctx.view); the canvas then
     // covers only that (a portrait phone sees about a third of the park). Without it, the whole width.
+    // density: index.html's ctx.density, which lowers DENSITY on phones (their memory); without it, DENSITY.
     resize(s) {
-      const [x0, x1] = r.resize(s, (Number(params.get("crowdDensity")) || DENSITY) / s, view?.() ?? null);
+      const want = Number(params.get("crowdDensity")) || (density ?? Number)(DENSITY);
+      const [x0, x1] = r.resize(s, want / s, view?.() ?? null);
       canvas.style.left = `${x0}px`;
       canvas.style.width = `${x1 - x0}px`;
     },

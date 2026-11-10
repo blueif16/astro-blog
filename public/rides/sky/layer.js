@@ -38,6 +38,7 @@ export const KEYS = ["dawn", "golden", "dusk", "night"];
 function image(src) {
   return new Promise((resolve, reject) => {
     const im = new Image();
+    im.crossOrigin = "anonymous";
     im.onload = () => resolve(im);
     im.onerror = () => reject(new Error(`failed to load ${src}`));
     im.src = src;

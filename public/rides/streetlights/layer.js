@@ -14,6 +14,7 @@ export async function mount(ctx) {
   for (const p of data.plates) ctx.addPatch(url(p.file), p.rect);
   const fronts = data.fronts.map(({ file, rect: [x, y, w, h] }) => {
     const img = new Image();
+    img.crossOrigin = "anonymous";
     img.src = url(file);
     img.alt = "";
     img.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;visibility:hidden`;

@@ -56,7 +56,7 @@ const PAIR_PATH = [[-120, 830], [900, 760], [1900, 700], [2900, 610], [3980, 540
 
 import { getSky } from "../../base/sky.js";
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 export async function mount(ctx) {
   const { params, slots, dir, camera } = ctx;
@@ -926,7 +926,7 @@ export async function mount(ctx) {
   const fixedT = reduced ? 31 : null; // reduced motion: one calm moment (the gull on its post, the otter eating)
   let lastT = NaN, lastH = NaN, density = 0;
   function resize(scale) {
-    const want = Number(params.get("wlDensity")) || clamp(scale * (devicePixelRatio || 1), 1.5, 2.5);
+    const want = Number(params.get("wlDensity")) || (ctx.density ?? Number)(clamp(scale * (devicePixelRatio || 1), 1.5, 2.5));
     if (Math.abs(want - density) < 1e-3) return;
     density = want;
     for (const b of boxes) { b.d = want; b.c.width = Math.ceil(b.w * want); b.c.height = Math.ceil(b.h * want); b.place = true; }

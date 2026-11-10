@@ -17,7 +17,7 @@ const SHEET_W = 2048;   // the mask texture's width
 const GAP = 2;          // px between packed masks, so linear filtering never reads a neighbour
 const SOLID = "solid";  // the mask of a rect without one
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 const sizeOf = (m) => [m.naturalWidth || m.videoWidth || m.width, m.naturalHeight || m.videoHeight || m.height];
 
 // sources: each an array, a function of t, or { name, occluders } (either, named for checks).
@@ -41,7 +41,7 @@ export async function createOcclusion(sources, { Y0 = 0, H = 2560, onMasks = () 
       if (mask.decode && !mask.complete) await mask.decode().catch(() => {});
       return mask;
     }
-    if (!images.has(mask)) images.set(mask, loadImage(new URL(mask, location.href).href));
+    if (!images.has(mask)) images.set(mask, loadImage(new URL(mask, document.baseURI).href));
     return images.get(mask);
   }
 

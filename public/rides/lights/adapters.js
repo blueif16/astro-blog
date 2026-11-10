@@ -4,7 +4,7 @@
 //   { name, rect, group, frame(t, out, {dark, on}), masks: [{ el, rect, alpha }] }
 import { hash } from "./behaviour.js";
 
-const loadImage = (url) => new Promise((ok, fail) => { const im = new Image(); im.onload = () => ok(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((ok, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => ok(im); im.onerror = fail; im.src = url; });
 const RAD = Math.PI / 180;
 
 // --- The Dream Wheel: a Chance Century Wheel with colour-changing LEDs on its rim, spokes and inner ring. Its permit

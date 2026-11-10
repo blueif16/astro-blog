@@ -38,7 +38,7 @@ const QUEUE = [[2264, 1356], [2265, 1370], [2266, 1384], [2267, 1398], [2268, 14
 import { rideHours } from "../../base/park_hours.js";
 import { getSky } from "../../base/sky.js";
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 export async function mount(ctx) {
   const url = (f) => new URL(f, ctx.dir).href;
@@ -129,6 +129,7 @@ export async function mount(ctx) {
   };
   const cutout = (name, meta, alpha = 1) => {
     const im = new Image();
+    im.crossOrigin = "anonymous";
     im.src = url(`occ_${name}.webp`);
     im.alt = "";
     const [x, y, w, h] = meta.rect;
@@ -153,7 +154,7 @@ export async function mount(ctx) {
   ];
   let density = 1;
   function resize(scale) {
-    density = Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1))); // at least 1.5 px per park px, shrunk by the browser: crisp at monitor size
+    density = (ctx.density ?? Number)(Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1)))); // at least 1.5 px per park px, shrunk by the browser: crisp at monitor size
     for (const g of [back, front]) { g.canvas.width = Math.round(bw * density); g.canvas.height = Math.round(bh * density); }
   }
   resize(ctx.scale());

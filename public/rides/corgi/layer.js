@@ -26,7 +26,7 @@ const lerp = (a, b, k) => a + (b - a) * k;
 const ease = (k) => { k = clamp(k); return k * k * (3 - 2 * k); };
 const bump = (x, a, b) => (x > a && x < b ? Math.sin((Math.PI * (x - a)) / (b - a)) : 0);
 const step = (t, fps) => (Math.floor(t * fps) % 2 ? "walk1" : "walk0");
-const load = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const load = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 // Each scene maps local time tau (s since the corgi hid here) to a pose: frame f, feet x/y (park px), flip (side
 // views face right; flip faces left), shade (0-1, in the dark), clip (a waterline y: only what is above shows),
@@ -242,7 +242,7 @@ export async function mount(ctx) {
   };
   const resize = (s) => {
     scale = s;
-    d = clamp(s * (devicePixelRatio || 1), 1, 3);
+    d = (ctx.density ?? Number)(clamp(s * (devicePixelRatio || 1), 1, 3));
     woof.style.fontSize = `${16 / s}px`;
     place();
   };

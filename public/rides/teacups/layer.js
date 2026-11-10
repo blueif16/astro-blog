@@ -139,7 +139,7 @@ uniform vec3 uInk;
 varying vec2 vP;
 void main() { float a = 0.24 * (1.0 - smoothstep(0.55, 1.0, length(vP))); gl_FragColor = vec4(uInk * a, a); }`;
 
-const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const loadImage = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 export async function mount(ctx) {
   const url = (f) => new URL(f, ctx.dir).href;
@@ -156,13 +156,13 @@ export async function mount(ctx) {
 
   // The renderer covers the ride's box only.
   const [bx, by, bw, bh] = [BOX[0], BOX[1], BOX[2] - BOX[0], BOX[3] - BOX[1]];
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, premultipliedAlpha: true });
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: !ctx.lite, premultipliedAlpha: true });
   renderer.setClearColor(0x000000, 0);
   const canvas = renderer.domElement;
   canvas.style.cssText = `left:${bx}px;top:${by}px;width:${bw}px;height:${bh}px`;
   ctx.slots.rides.append(canvas);
   function resize(scale) {
-    renderer.setPixelRatio(Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1)))); // at least 1.5 px per park px, shrunk by the browser: crisp at monitor size
+    renderer.setPixelRatio((ctx.density ?? Number)(Math.min(2.5, Math.max(1.5, scale * (devicePixelRatio || 1))))); // at least 1.5 px per park px, shrunk by the browser: crisp at monitor size
     renderer.setSize(bw, bh, false);
   }
   resize(ctx.scale());

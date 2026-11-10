@@ -144,7 +144,7 @@ function createBatch(canvas, image, max = 3000) {
   };
 }
 
-const load = (url) => new Promise((done, fail) => { const im = new Image(); im.onload = () => done(im); im.onerror = fail; im.src = url; });
+const load = (url) => new Promise((done, fail) => { const im = new Image(); im.crossOrigin = "anonymous"; im.onload = () => done(im); im.onerror = fail; im.src = url; });
 
 export async function mount(ctx) {
   const { camera, params, slots } = ctx;
@@ -1006,7 +1006,7 @@ export async function mount(ctx) {
   const FPS = params.has("beachFps") ? Number(params.get("beachFps")) : 30;
   const reduce = !!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   function resize(scale) {
-    const want = Number(params.get("beachDensity")) || clamp(scale * (devicePixelRatio || 1), 1.5, 2.5);
+    const want = Number(params.get("beachDensity")) || (ctx.density ?? Number)(clamp(scale * (devicePixelRatio || 1), 1.5, 2.5));
     const [vx0, vx1] = ctx.view?.() ?? [RX, RX + RW];
     const crop = vx0 > RX || vx1 < RX + RW; // else the whole rect, exactly as before
     const cx0 = crop ? Math.floor(clamp(vx0 - RX, 0, RW) * want) / want : 0;
