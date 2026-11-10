@@ -140,7 +140,7 @@ function clearOfCutouts(walk, camera, pieces) {
 // hour: a function returning the hour of the day (or a number); by default the page's sky (base/sky.js: the visitor's
 // clock, &hour=, the badge's scrub and play), followed live. The park's hours (base/park_hours.js) close the ride
 // queues and stalls from 22:45 to 10:30.
-export async function mountCrowd(canvas, { params = new URLSearchParams(location.search), size = 38, count = 120, hour = null, sky = null, room = 1.5, rides: blocks = [], occluders = [], clock = createClock() } = {}) {
+export async function mountCrowd(canvas, { params = new URLSearchParams(location.search), size = 38, count = 120, hour = null, sky = null, room = 1.5, rides: blocks = [], occluders = [], clock = createClock(), view = null } = {}) {
   const skyNow = typeof hour === "function" || typeof hour === "number" ? null : sky ?? getSky({ params });
   const hourNow = typeof hour === "function" ? hour : typeof hour === "number" ? () => hour : () => { skyNow.tick?.(); return skyNow.hour; };
   const dir = new URL("./", import.meta.url);
@@ -257,7 +257,13 @@ export async function mountCrowd(canvas, { params = new URLSearchParams(location
     // s: CSS px per park px. At the screen's own density (0.67 px per park px on a 2560 window) the canvas sits at a
     // fractional offset in the scaled world and is resampled soft; at DENSITY and shrunk by the browser the sprites
     // are as crisp as the rides (Laplacian variance on them 4.6k -> 19.7k at 2560 x 1440). &crowdDensity= overrides.
-    resize(s) { r.resize(s, (Number(params.get("crowdDensity")) || DENSITY) / s); },
+    // view: a function returning the park x-range [x0, x1] the window shows (index.html's ctx.view); the canvas then
+    // covers only that (a portrait phone sees about a third of the park). Without it, the whole width.
+    resize(s) {
+      const [x0, x1] = r.resize(s, (Number(params.get("crowdDensity")) || DENSITY) / s, view?.() ?? null);
+      canvas.style.left = `${x0}px`;
+      canvas.style.width = `${x1 - x0}px`;
+    },
     // Who rides a ride's vehicle key at clock time t (rides/RIDERS.md): their looks, [] for empty seats.
     riders: (name, key, t) => crowd.riders(name, key, t),
     update() {

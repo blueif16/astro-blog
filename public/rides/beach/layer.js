@@ -54,8 +54,9 @@ function uprushTime(x, y, k) { const u = shoreU(x, y); return (k + u / SEA_L - 0
 const VS = `#version 300 es
 in vec2 aPos; in vec2 aUv; in vec4 aCol;
 uniform vec2 uSize;
+uniform float uX0;   // the canvas's left edge in rect px (0 unless the window shows only part of the rect)
 out vec2 vUv; out vec4 vCol;
-void main() { vUv = aUv; vCol = aCol; gl_Position = vec4(aPos.x / uSize.x * 2.0 - 1.0, 1.0 - aPos.y / uSize.y * 2.0, 0.0, 1.0); }`;
+void main() { vUv = aUv; vCol = aCol; gl_Position = vec4((aPos.x - uX0) / uSize.x * 2.0 - 1.0, 1.0 - aPos.y / uSize.y * 2.0, 0.0, 1.0); }`;
 const FS = `#version 300 es
 precision mediump float;
 uniform sampler2D uTex;
@@ -103,7 +104,7 @@ function createBatch(canvas, image, max = 3000) {
     gl.vertexAttribPointer(loc, size, gl.FLOAT, false, F * 4, off * 4);
   }
   gl.bindVertexArray(null);
-  const uSize = gl.getUniformLocation(prog, "uSize");
+  const uSize = gl.getUniformLocation(prog, "uSize"), uX0 = gl.getUniformLocation(prog, "uX0");
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
   let n = 0;
@@ -123,13 +124,15 @@ function createBatch(canvas, image, max = 3000) {
       n++;
     },
     begin() { n = 0; },
-    end(w, h) {
+    // w x h: the canvas's size in the quads' units; x0: the quads' x at its left edge.
+    end(w, h, x0 = 0) {
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       if (!n) return 0;
       gl.useProgram(prog);
       gl.uniform2f(uSize, w, h);
+      gl.uniform1f(uX0, x0);
       gl.bindVertexArray(vao);
       gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
       gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, n * 4 * F);
@@ -997,15 +1000,25 @@ export async function mount(ctx) {
   }
 
   // ---- the frame ----
-  let density = 0, lastT = NaN, lastH = NaN;
+  // The canvas covers the part of the rect the window shows (ctx.view: all of it on screens 3:2 and wider), from CX0 to
+  // CX1 in rect px; the quads keep their rect coordinates and the shader shifts them by CX0.
+  let density = 0, lastT = NaN, lastH = NaN, CX0 = 0, CX1 = RW, fitted = "";
   const FPS = params.has("beachFps") ? Number(params.get("beachFps")) : 30;
   const reduce = !!globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   function resize(scale) {
     const want = Number(params.get("beachDensity")) || clamp(scale * (devicePixelRatio || 1), 1.5, 2.5);
-    if (Math.abs(want - density) < 1e-3) return;
-    density = want;
-    canvas.width = Math.round(RW * density);
+    const [vx0, vx1] = ctx.view?.() ?? [RX, RX + RW];
+    const crop = vx0 > RX || vx1 < RX + RW; // else the whole rect, exactly as before
+    const cx0 = crop ? Math.floor(clamp(vx0 - RX, 0, RW) * want) / want : 0;
+    const cx1 = crop ? Math.max(cx0 + 1 / want, clamp(vx1 - RX, 0, RW)) : RW;
+    const key = `${want.toFixed(3)} ${cx0} ${cx1}`;
+    if (key === fitted) return;
+    fitted = key; density = want; CX0 = cx0; CX1 = cx1;
+    canvas.width = Math.round((CX1 - CX0) * density);
     canvas.height = Math.round(RH * density);
+    if (crop) CX1 = CX0 + canvas.width / density;
+    canvas.style.left = `${RX + CX0}px`;
+    canvas.style.width = `${CX1 - CX0}px`;
     lastT = NaN;
   }
   function cutSprite(r) {
@@ -1036,7 +1049,7 @@ export async function mount(ctx) {
     }
     for (const s of systems) if (s.a > 0 && s.air) { A = s.a; s.air(t); }
     A = 1;
-    return submit ? batch.end(RW, RH) : batch.quads;
+    return submit ? batch.end(CX1 - CX0, RH, CX0) : batch.quads;
   }
   resize(ctx.scale?.() ?? 1);
 

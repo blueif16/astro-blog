@@ -99,7 +99,8 @@
 // Ride layers live in rides/<name>/layer.js and export mount(ctx) -> { update(t, dt), resize(scale), riders?,
 // occluders? }. ctx gives the park frame (3840 x 2560 park px; camera from tests/park-crowd/park.json), the master
 // clock, the slots (plate: painting patches; rides; front: drawn over the crowd), addPatch(url, rect) for plate
-// patches made with tools/park_patch.py, canvas(slot) for a park-sized canvas that tracks the window's scale, and
+// patches made with tools/park_patch.py, canvas(slot) for a park-sized canvas that tracks the window's scale, view()
+// for the park x-range the window shows (a canvas wider than a ride covers only that part of it), and
 // riders(name, key, t) (rides/RIDERS.md), and sky (base/sky.js: the time of day every layer reads; rides/sky grades
 // the page by it and draws the sun/moon badge; slots grade, pool and lights sit over front for it and rides/lights).
 // Depth (rides/RIDERS.md "Depth"): the crowd's canvas is above the rides slot, so a layer returns `occluders` for
@@ -153,9 +154,19 @@ const park = await fetch("tests/park-crowd/park.json").then((r) => r.json());
 const clock = createClock();
 const sky = getSky({ params });
 const canvases = [];
+// The park x-range the window shows, [x0, x1] park px with VIEW_MARGIN each side: the whole width on screens 3:2 and
+// wider, about a third of it on a portrait phone. Layers whose canvases span the park cover only this range, so their
+// memory follows the window: a phone holds far less than a desktop, and Safari closes a tab that outgrows it. They
+// read it again in resize(scale).
+const VIEW_MARGIN = 32;
+const view = () => {
+  const hw = innerWidth / (2 * scale) + VIEW_MARGIN;
+  return [Math.max(0, Math.floor(W / 2 - hw)), Math.min(W, Math.ceil(W / 2 + hw))];
+};
 const ctx = {
   park, W, H, camera: createCamera(park), clock, params, slots, sky,
   scale: () => scale,
+  view,
   // Who rides a ride's vehicle key at clock time t (rides/RIDERS.md); null without the crowd: the ride picks its own.
   riders: (name, key, t) => crowd?.riders(name, key, t) ?? null,
   addPatch(url, [x, y, w, h]) {
@@ -259,7 +270,7 @@ await new Promise((done) => { waveDone = () => { if (firstWave.every((n) => stat
 
 if (params.get("crowd") !== "0") {
   const { mountCrowd } = await import("./tests/park-crowd/crowd.js");
-  crowd = await mountCrowd(document.getElementById("animals"), { params, clock, rides: riderBlocks, occluders });
+  crowd = await mountCrowd(document.getElementById("animals"), { params, clock, rides: riderBlocks, occluders, view });
   crowd.resize(scale);
   performance.mark("alive:crowd");
 }

@@ -111,18 +111,33 @@ export async function mountLights(ctx, { inventories, parents, density = 1.5, sk
   }
 
   // --- Canvases ---
+  // The part of a rect the window shows (ctx.view: all of it on screens 3:2 and wider), its left edge on the canvas's
+  // pixel grid at density d. Every lights canvas covers only that part, so on a portrait phone they hold about a third
+  // of the park; what is drawn outside it is clipped.
+  function shown(rect, d) {
+    const [x, y, w, h] = rect, [v0, v1] = ctx.view?.() ?? [x, x + w];
+    if (v0 <= x && v1 >= x + w) return rect;
+    const x0 = x + Math.floor(Math.min(w, Math.max(0, v0 - x)) * d) / d;
+    const x1 = Math.max(x0 + 1 / d, Math.min(x + w, v1));
+    return [x0, y, Math.ceil((x1 - x0) * d) / d, h];
+  }
+  const place = (c, [x, y, w, h], d) => {
+    Object.assign(c.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
+    c.width = Math.max(1, Math.round(w * d)); c.height = Math.max(1, Math.round(h * d));
+  };
+
   const surfaces = [];
-  function canvasIn(parent, blend, dens, rect) {
-    const [RX, RY, RW, RH] = rect;
+  // full: the rect the canvas is for; rect: the part of it the canvas covers now (shown).
+  function canvasIn(parent, blend, dens, full) {
     const c = document.createElement("canvas");
     c.className = "lights";
-    c.style.cssText = `position:absolute;left:${RX}px;top:${RY}px;width:${RW}px;height:${RH}px;mix-blend-mode:${blend};pointer-events:none`;
+    c.style.cssText = `position:absolute;mix-blend-mode:${blend};pointer-events:none`;
     parent.append(c);
     const g = c.getContext("2d");
     const cv = {
-      c, g, d: dens, rect, fixed: dens != null,
-      fit(d) { if (!this.fixed) this.d = d; c.width = Math.max(1, Math.round(RW * this.d)); c.height = Math.max(1, Math.round(RH * this.d)); },
-      reset(fill) { const d = this.d; g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; g.filter = "none"; if (fill) { g.fillStyle = fill; g.fillRect(0, 0, c.width, c.height); } else g.clearRect(0, 0, c.width, c.height); g.setTransform(d, 0, 0, d, -RX * d, -RY * d); },
+      c, g, d: dens, full, rect: full, fixed: dens != null,
+      fit(d) { if (!this.fixed) this.d = d; this.rect = shown(full, this.d); place(c, this.rect, this.d); },
+      reset(fill) { const d = this.d, [RX, RY] = this.rect; g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "source-over"; g.globalAlpha = 1; g.filter = "none"; if (fill) { g.fillStyle = fill; g.fillRect(0, 0, c.width, c.height); } else g.clearRect(0, 0, c.width, c.height); g.setTransform(d, 0, 0, d, -RX * d, -RY * d); },
     };
     cv.fit(dens ?? density);
     surfaces.push(cv);
@@ -331,14 +346,14 @@ export async function mountLights(ctx, { inventories, parents, density = 1.5, sk
   // frame() pushes lights { x, y, kind: "bulb"|"led"|"head"|"tail"|"beam", colour, a, vis?, r?, dx?, dy?, len?, w? } in park px;
   // vis is the layer's own moving occlusion (a cabin, a train in front), masks its static occluders.
   function register(p) {
-    const [x, y, w, h] = p.rect;
     const c = document.createElement("canvas");
     c.className = "lights";
-    c.style.cssText = `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;mix-blend-mode:plus-lighter;pointer-events:none`;
-    c.width = Math.round(w * density); c.height = Math.round(h * density);
+    c.style.cssText = "position:absolute;mix-blend-mode:plus-lighter;pointer-events:none";
+    const sh = shown(p.rect, density); // the part of the layer's rect its canvas covers
+    place(c, sh, density);
     parents.lights.append(c);
     const seed = hash(providers.length + 99) % 1;
-    providers.push({ ...p, c, g: c.getContext("2d"), seed, list: [], drawn: true });
+    providers.push({ ...p, shown: sh, c, g: c.getContext("2d"), seed, list: [], drawn: true });
     // Light the layer throws on the ground joins the static pools, switched with the layer's group.
     (p.pools ?? []).forEach((q, i) => lights.push({ id: `${p.name}_pool${i}`, kind: "spill", group: p.group || "ride", seed: (seed + i * 0.137) % 1, x: q.c[0], lvl: 0, c: hex(q.colour), pool: q }));
     lastKey = "";
@@ -371,8 +386,8 @@ export async function mountLights(ctx, { inventories, parents, density = 1.5, sk
   }
 
   function drawProvider(p, t) {
-    const [x0, y0, w, h] = p.rect, g = p.g, d = p.c.width / w;
-    const on = sky.dark > 0.005 ? level({ group: p.group || "ride", seed: p.seed, x: x0 + w / 2 }, sky, t) : 0;
+    const [x0, y0, w] = p.shown, g = p.g, d = p.c.width / w;
+    const on = sky.dark > 0.005 ? level({ group: p.group || "ride", seed: p.seed, x: p.rect[0] + p.rect[2] / 2 }, sky, t) : 0;
     if (on <= 0.002 && !p.drawn) return; // idle: nothing on, nothing left on the canvas
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.globalCompositeOperation = "source-over";
@@ -450,10 +465,11 @@ export async function mountLights(ctx, { inventories, parents, density = 1.5, sk
       cost += t2 - t0; frames++; part.static = (part.static ?? 0) + t1 - t0; part.live = (part.live ?? 0) + t2 - t1;
     },
     // The window's scale changed: refit the screen-density canvases and redraw on the next frame.
+    // Each canvas also follows the part of the park the window shows (shown); the fixed-density ones refit only then.
     resize(d) {
       density = d;
-      for (const cv of surfaces) if (!cv.fixed) cv.fit(d);
-      for (const p of providers) { p.c.width = Math.round(p.rect[2] * d); p.c.height = Math.round(p.rect[3] * d); p.drawn = true; }
+      for (const cv of surfaces) if (!cv.fixed || String(shown(cv.full, cv.d)) !== String(cv.rect)) cv.fit(d);
+      for (const p of providers) { p.shown = shown(p.rect, d); place(p.c, p.shown, d); p.drawn = true; }
       lastKey = ""; frames = 0;
     },
     stats: () => ({ idle: !!wasIdle, lights: lights.length, on: lights.filter((L) => L.lvl > 0.5).length, ms: +(cost / Math.max(1, frames)).toFixed(2), redraws, part: Object.fromEntries(Object.entries(part).map(([k, v]) => [k, +(v / Math.max(1, frames)).toFixed(2)])) }),

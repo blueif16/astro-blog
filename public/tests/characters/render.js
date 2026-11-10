@@ -15,6 +15,7 @@ in vec2 aPos;
 in vec3 aUv;
 in vec4 aOcc;
 uniform vec2 uSize;
+uniform float uX0;   // the canvas's left edge in canvas px (resize's view; 0 when it covers the whole width)
 out vec3 vUv;
 out vec2 vPos;
 flat out ivec4 vOcc;
@@ -22,7 +23,7 @@ void main() {
   vUv = aUv;
   vPos = aPos;
   vOcc = ivec4(aOcc);
-  gl_Position = vec4(aPos.x / uSize.x * 2.0 - 1.0, 1.0 - aPos.y / uSize.y * 2.0, 0.0, 1.0);
+  gl_Position = vec4((aPos.x - uX0) / uSize.x * 2.0 - 1.0, 1.0 - aPos.y / uSize.y * 2.0, 0.0, 1.0);
 }`;
 const FS = `#version 300 es
 precision highp float;
@@ -107,7 +108,9 @@ export function createRenderer(canvas, image, meta, { W, H, maxQuads = 8192 }) {
   gl.vertexAttribPointer(aUv, 3, gl.FLOAT, false, STRIDE * 4, 8);
   gl.enableVertexAttribArray(aOcc);
   gl.vertexAttribPointer(aOcc, 4, gl.FLOAT, false, STRIDE * 4, 20);
-  gl.uniform2f(gl.getUniformLocation(prog, "uSize"), W, H);
+  const uSize = gl.getUniformLocation(prog, "uSize"), uX0 = gl.getUniformLocation(prog, "uX0");
+  gl.uniform2f(uSize, W, H);
+  gl.uniform1f(uX0, 0);
   gl.enable(gl.BLEND);
   gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -177,10 +180,21 @@ export function createRenderer(canvas, image, meta, { W, H, maxQuads = 8192 }) {
 
   return {
     gl, frames,
-    resize(cssScale, dpr) {
+    // view [x0, x1] (canvas px, optional): the canvas covers only that part of the width, so its memory follows the
+    // window instead of the whole park (a view covering the whole width changes nothing). x0 is moved onto the
+    // device-pixel grid; returns the [x0, x1] it covers, for the caller to place the canvas (style left and width).
+    // Quads outside it are clipped.
+    resize(cssScale, dpr, view = null) {
       snap = cssScale * dpr;
-      const w = Math.round(W * snap), h = Math.round(H * snap);
+      const crop = !!view && (view[0] > 0 || view[1] < W);
+      const x0 = crop ? Math.max(0, Math.floor(view[0] * snap) / snap) : 0;
+      const w = crop ? Math.max(1, Math.round((Math.min(W, view[1]) - x0) * snap)) : Math.round(W * snap), h = Math.round(H * snap);
       if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+      const cw = crop ? w / snap : W;
+      gl.useProgram(prog);
+      gl.uniform2f(uSize, cw, H);
+      gl.uniform1f(uX0, x0);
+      return [x0, x0 + cw];
     },
     // The packed masks: R8 bytes, w x h, row 0 at the top (as read from a canvas).
     masks(bytes, w, h) {

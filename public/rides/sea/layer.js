@@ -14,15 +14,17 @@
 // &sea=copy only redraws the painting (the cost floor for comparisons).
 // &fps=8 draws on threes (limited animation, also the cheapest), &calm=0 stops all motion (must equal the still),
 // &calm=0.5 halves it. prefers-reduced-motion stops it too.
+// The canvas covers the part of the rect the window shows (ctx.view; all of it on screens 3:2 and wider): uWin is its
+// left edge and width in rect px. The textures still span the whole rect, except uPaint, which is cropped to uWin.
 const VS = `#version 300 es
 in vec2 aPos;
 out vec2 vP;
-uniform vec2 uRect;
-void main() { vP = (aPos * 0.5 + 0.5) * uRect; vP.y = uRect.y - vP.y; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+uniform vec2 uRect, uWin;
+void main() { vP = (aPos * 0.5 + 0.5) * vec2(uWin.y, uRect.y); vP.x += uWin.x; vP.y = uRect.y - vP.y; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
 const COMMON = `
 uniform sampler2D uPaint, uMasks, uDash, uClean, uHole;
-uniform vec2 uRect;
+uniform vec2 uRect, uWin;
 uniform float uT, uCalm, uAmp;
 uniform vec2 uShore;
 float hash(float n) { return fract(sin(n) * 43758.5453); }
@@ -33,7 +35,7 @@ float vnoise2(vec2 p) {
   return mix(mix(hash2(i), hash2(i + vec2(1, 0)), f.x), mix(hash2(i + vec2(0, 1)), hash2(i + vec2(1, 1)), f.x), f.y);
 }
 float sdf(vec2 p) { return texture(uMasks, p / uRect).r * 255.0 - 128.0; }
-vec3 paint(vec2 p) { return texture(uPaint, p / uRect).rgb; }
+vec3 paint(vec2 p) { return texture(uPaint, vec2((p.x - uWin.x) / uWin.y, p.y / uRect.y)).rgb; }
 
 // Swash: quick uprush, slow backwash, a short rest. f in [0, 1) is the phase within one wave.
 float swash(float f) {
@@ -119,7 +121,7 @@ const DVS = `#version 300 es
 in vec2 aCorner;
 in vec4 aRect;   // x, y, w, h (rect-local park px)
 in vec4 aDash;   // normal x, y, seed, stroke id
-uniform vec2 uRect;
+uniform vec2 uRect, uWin;
 uniform float uT, uCalm;
 out vec2 vP;
 out vec2 vOff;
@@ -139,7 +141,7 @@ void main() {
   vec2 p = aRect.xy - pad + aCorner * (aRect.zw + 2.0 * pad);
   vP = p;
   vOff = off;
-  vec2 ndc = vec2(p.x / uRect.x * 2.0 - 1.0, 1.0 - p.y / uRect.y * 2.0);
+  vec2 ndc = vec2((p.x - uWin.x) / uWin.y * 2.0 - 1.0, 1.0 - p.y / uRect.y * 2.0);
   gl_Position = vec4(ndc, 0.0, 1.0);
 }`;
 const DFS = `#version 300 es
@@ -274,7 +276,11 @@ export async function mount(ctx) {
 
   // The painting's pixels under the canvas, at the canvas's own resolution, from the page's painting.
   const painting = document.getElementById("painting");
-  let density = 0, lastT = -1, dirty = true;
+  let density = 0, lastT = -1, dirty = true, fitted = "";
+  // The part of the rect the canvas covers: [x0, x0 + w] in rect px (uWin).
+  let win = [0, rw];
+  const setWin = () => { for (const p of [prog, dprog]) { gl.useProgram(p); gl.uniform2f(U(p, "uWin"), win[0], win[1] - win[0]); } };
+  setWin();
   function cropPainting() {
     const img = painting?.complete && painting.naturalWidth ? painting : null;
     if (!img) return false;
@@ -283,7 +289,7 @@ export async function mount(ctx) {
     c2.width = canvas.width; c2.height = canvas.height;
     const g2 = c2.getContext("2d");
     g2.imageSmoothingQuality = "high";
-    g2.drawImage(img, rx * kx, ry * ky, rw * kx, rh * ky, 0, 0, c2.width, c2.height);
+    g2.drawImage(img, (rx + win[0]) * kx, ry * ky, (win[1] - win[0]) * kx, rh * ky, 0, 0, c2.width, c2.height);
     if (paintTex) gl.deleteTexture(paintTex);
     paintTex = texture(0, c2);
     dirty = true;
@@ -293,10 +299,20 @@ export async function mount(ctx) {
 
   function resize(scale) {
     const d = scale * Math.min(devicePixelRatio || 1, 1.25 / scale);
-    if (Math.abs(d - density) < 1e-4 && paintTex) return;
+    const [vx0, vx1] = ctx.view?.() ?? [rx, rx + rw];
+    const crop = vx0 > rx || vx1 < rx + rw; // else the whole rect, exactly as before
+    const x0 = crop ? Math.floor(Math.min(rw, Math.max(0, vx0 - rx)) * d) / d : 0;
+    const x1 = crop ? Math.max(x0 + 1 / d, Math.min(rw, vx1 - rx)) : rw;
+    const key = `${d.toFixed(4)} ${x0} ${x1}`;
+    if (key === fitted && paintTex) return;
+    fitted = key;
     density = d;
-    canvas.width = Math.round(rw * d);
+    canvas.width = Math.round((x1 - x0) * d);
     canvas.height = Math.round(rh * d);
+    win = [x0, crop ? x0 + canvas.width / d : rw];
+    canvas.style.left = `${rx + win[0]}px`;
+    canvas.style.width = `${win[1] - win[0]}px`;
+    setWin();
     cropPainting();
   }
 
