@@ -67,19 +67,34 @@
 (() => {
   const W = 3840, H = 2560, WIDTHS = [1920, 2560, 3456, 3840, 5120];
   const world = document.getElementById("world"), painting = document.getElementById("painting");
-  const F = window.__fit = { W, H, scale: 1, loaded: 0 };
+  const q = new URLSearchParams(location.search);
+  // The lite park, for phones and tablets: a touch screen, or a device reporting 4 GB or less; &tier=lite|full forces
+  // one. The module reads it from here (F.lite).
+  const lite = q.has("tier") ? q.get("tier") === "lite" : matchMedia("(pointer: coarse)").matches || (navigator.deviceMemory ?? 8) <= 4;
+  // A portrait screen can frame part of the park instead of its middle: &view= names one of these, [centre x,
+  // centre y, height shown] in park px (candidates for the phone's view, 2026-11-10). Wider screens show the whole park.
+  const VIEWS = { centre: [1920, 1280, 2560], west: [1150, 1280, 2560], east: [2950, 1280, 2560],
+    boardwalk: [2150, 1380, 1830], dipper: [2450, 1350, 1420], carousel: [1950, 1330, 1600] };
+  const focus = VIEWS[q.get("view")] ?? null;
+  const F = window.__fit = { W, H, scale: 1, loaded: 0, tx: 0, ty: 0, lite };
   // The smallest width that covers the window at the screen's pixel density, at most 2x (a 3x phone gets the 2x
-  // painting: 1.3 MB less), and only ever stepping up.
+  // painting: 1.3 MB less), and only ever stepping up; lite stops at 3840 (the 5120 one decodes to 70 MB).
   F.pick = (s) => {
-    const need = W * s * Math.min(devicePixelRatio || 1, 2);
-    const w = WIDTHS.find((v) => v >= need * 0.95) ?? WIDTHS.at(-1);
+    const need = W * s * Math.min(devicePixelRatio || 1, 2), widths = WIDTHS.filter((v) => !lite || v <= 3840);
+    const w = widths.find((v) => v >= need * 0.95) ?? widths.at(-1);
     if (w > F.loaded) { F.loaded = w; painting.src = `site/park/world_${w}.webp`; }
   };
   F.fit = () => {
-    F.scale = Math.max(innerWidth / W, innerHeight / H);
-    F.pick(F.scale);
-    world.style.transform = `translate(${(innerWidth - W * F.scale) / 2}px, ${(innerHeight - H * F.scale) / 2}px) scale(${F.scale})`;
+    const framed = focus && innerHeight > innerWidth;
+    const s = F.scale = Math.max(innerWidth / W, innerHeight / (framed ? focus[2] : H));
+    // The world's offset: centred, or the view's centre in the middle of the window without uncovering an edge.
+    F.tx = framed ? Math.min(0, Math.max(innerWidth - W * s, innerWidth / 2 - focus[0] * s)) : (innerWidth - W * s) / 2;
+    F.ty = framed ? Math.min(0, Math.max(innerHeight - H * s, innerHeight / 2 - focus[1] * s)) : (innerHeight - H * s) / 2;
+    F.pick(s);
+    world.style.transform = `translate(${F.tx}px, ${F.ty}px) scale(${s})`;
   };
+  // The park rect the window shows, [x0, y0, x1, y1] park px.
+  F.shown = () => [-F.tx / F.scale, -F.ty / F.scale, (innerWidth - F.tx) / F.scale, (innerHeight - F.ty) / F.scale];
   F.fit();
   document.getElementById("preview").src = "site/park/world_960.webp";   // a readable park in ~0.4 s on 4G
 })();
@@ -169,15 +184,14 @@ const canvases = [];
 // read it again in resize(scale).
 const VIEW_MARGIN = 32;
 const view = () => {
-  const hw = innerWidth / (2 * scale) + VIEW_MARGIN;
-  return [Math.max(0, Math.floor(W / 2 - hw)), Math.min(W, Math.ceil(W / 2 + hw))];
+  const [x0, , x1] = F.shown();
+  return [Math.max(0, Math.floor(x0 - VIEW_MARGIN)), Math.min(W, Math.ceil(x1 + VIEW_MARGIN))];
 };
 // The lite park, for phones and tablets (a touch screen, or a device reporting 4 GB or less): Safari closes a tab that
 // outgrows the device, and the desktop park's sharpness costs memory a phone hasn't got. In lite, every live canvas
 // draws at most at the screen's own resolution counted at 2x (density below), the 3D rides drop antialiasing, the
 // rides load one at a time (a lower peak while images decode) and the frame runs at 30 fps. &tier=lite|full forces one.
-const LITE = params.has("tier") ? params.get("tier") === "lite"
-  : matchMedia("(pointer: coarse)").matches || (navigator.deviceMemory ?? 8) <= 4;
+const LITE = F.lite; // decided in the classic script above
 document.documentElement.dataset.tier = LITE ? "lite" : "full";
 // Device px per park px for a live canvas: what the layer asks for (its sharpness on a monitor) in full; in lite never
 // more than the window shows at 2x, so no layer draws more pixels than a phone screen can show.
@@ -250,7 +264,9 @@ const BOXES = { // each ride's box in park px [x0, y0, x1, y1] (from its layer.j
   carousel: [1555, 1095, 1790, 1315], thrill: [895, 725, 1415, 1240], swings: [2680, 1335, 2892, 1542],
 };
 const AT_ONCE = LITE ? 1 : 3;
-const wanted = params.has("layers") ? params.get("layers").split(",").filter(Boolean) : RIDES;
+// &still: the painting, graded by the hour, with nothing moving (a candidate for phones, 2026-11-10).
+const STILL = params.has("still");
+const wanted = params.has("layers") ? params.get("layers").split(",").filter(Boolean) : STILL ? ["sky"] : RIDES;
 // rides/lights mounts last, after the crowd: it reads the live rides it lights (window.__wheel and the rest).
 const queue = [...ORDER.filter((n) => wanted.includes(n)), ...wanted.filter((n) => !ORDER.includes(n) && n !== "lights")];
 const riderBlocks = [], occluders = [], state = {};
@@ -258,8 +274,8 @@ let running = 0, started = false, waveDone = () => {};
 function onScreen(name) {
   const b = BOXES[name];
   if (!b) return true;
-  const m = 40, hw = innerWidth / (2 * scale), hh = innerHeight / (2 * scale);
-  return b[0] < W / 2 + hw + m && b[2] > W / 2 - hw - m && b[1] < H / 2 + hh + m && b[3] > H / 2 - hh - m;
+  const m = 40, [x0, y0, x1, y1] = F.shown();
+  return b[0] < x1 + m && b[2] > x0 - m && b[1] < y1 + m && b[3] > y0 - m;
 }
 async function mountRide(name) {
   // Plate patches (the painting with the ride erased) stay hidden until the ride is ready, so the painted ride never
@@ -301,7 +317,7 @@ started = true;
 for (const n of firstWave) document.head.append(Object.assign(document.createElement("link"), { rel: "modulepreload", href: `rides/${n}/layer.js` }));
 await new Promise((done) => { waveDone = () => { if (firstWave.every((n) => state[n] === "alive")) done(); }; schedule(); waveDone(); });
 
-if (params.get("crowd") !== "0") {
+if (params.get("crowd") !== "0" && !STILL) {
   crumb("loading crowd");
   const { mountCrowd } = await import("./tests/park-crowd/crowd.js");
   crowd = await mountCrowd(document.getElementById("animals"), { params, clock, rides: riderBlocks, occluders, view, density, lite: LITE });
