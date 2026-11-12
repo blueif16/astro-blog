@@ -9,6 +9,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/markdown-remark": "6.3.10",
     "@astrojs/react": "^4.4.2",
     "@astrojs/rss": "^4.0.15",
     "@astrojs/vercel": "^9.0.4",
@@ -21,6 +22,7 @@
     "astro": "^5.17.1",
     "framer-motion": "^12.35.0",
     "gsap": "^3.12.5",
+    "js-yaml": "^4.1.1",
     "prop-types": "^15.8.1",
     "react": "^19.2.4",
     "react-animate-on-scroll": "^2.1.9",
