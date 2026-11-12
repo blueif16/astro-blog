@@ -1,31 +1,27 @@
 # Obsidian → Astro Blog Architecture
 
-Complete documentation for the two-repo auto-deploy blog system.
+Complete documentation for the two-repo blog system. New content goes live without a deploy.
 
 ---
 
 ## Architecture Overview
 
 ```
-┌──────────────────────┐          ┌──────────────────────────────┐
-│  REPO A (private)    │          │  REPO B (public)             │
-│  Obsidian Vault      │  webhook │  Astro Blog Site             │
-│  github.com/         │─────────▶│  github.com/                 │
-│  blueif16/brain      │          │  blueif16/astro-blog         │
-│                      │          │                              │
-│  publish/            │          │  scripts/sync-content.sh     │
-│  ├── blog/           │          │    ↓ clones Repo A at build  │
-│  ├── notes/          │          │    ↓ copies publish/ folders │
-│  ├── projects/       │          │  src/content/                │
-│  ├── guides/         │          │  ├── blog/                   │
-│  └── til/            │          │  ├── notes/                  │
-│                      │          │  ├── projects/               │
-│  .github/workflows/  │          │  ├── guides/                 │
-│    trigger-deploy.yml│          │  └── til/                    │
-│                      │          │                              │
-│  Obsidian Git        │          │  Vercel auto-builds on       │
-│  auto-commits        │          │  deploy hook POST            │
-└──────────────────────┘          └──────────────────────────────┘
+┌──────────────────────┐            ┌──────────────────────────────┐
+│  REPO A (private)    │            │  REPO B (public)             │
+│  Obsidian Vault      │  refresh   │  Astro Blog Site on Vercel   │
+│  github.com/         │──────────▶ │  github.com/                 │
+│  blueif16/brain      │  requests  │  blueif16/astro-blog         │
+│                      │            │                              │
+│  publish/blog/       │ ◀───────── │  /blog, /blog/<slug>         │
+│  resources/briefings/│  GitHub API│  /feed, /feed/<date>         │
+│                      │  on render │    rendered on request,      │
+│  .github/workflows/  │            │    cached by Vercel (ISR)    │
+│   trigger-deploy.yml │            │    until refreshed           │
+│   trigger-rebuild.yml│            │                              │
+│  .github/scripts/    │            │  every other page: static,   │
+│   refresh-site.sh    │            │  built on deploy             │
+└──────────────────────┘            └──────────────────────────────┘
 ```
 
 ---
@@ -34,11 +30,15 @@ Complete documentation for the two-repo auto-deploy blog system.
 
 1. **Write** in Obsidian (any device with vault synced)
 2. **Save** - Obsidian Git auto-commits and pushes to `github.com/blueif16/brain`
-3. **Trigger** - GitHub Action detects changes in `publish/` and fires Vercel Deploy Hook
-4. **Build** - Vercel clones vault repo (sparse checkout), copies content, builds Astro site
-5. **Deploy** - Site goes live in ~60 seconds
+3. **Refresh** - A GitHub Action sees the change (`publish/**` or `resources/briefings/**` on `main`)
+   and runs `.github/scripts/refresh-site.sh`, which requests each page of that section with the
+   header `x-prerender-revalidate: $REVALIDATE_TOKEN`
+4. **Render** - Vercel re-renders each requested page; the page reads the vault from the GitHub API
+   (`src/live.config.ts`, `src/utils/github-loader.ts`) and is cached again
+5. **Live** - Readers get the new page within a minute or two. Nothing is built or deployed.
 
-**Zero manual steps.** Write → save → live.
+**Zero manual steps.** Write → save → live. A push to this repo still deploys as before, and a
+deploy clears the cache, so every page is rendered fresh on its first visit after it.
 
 ---
 
@@ -54,8 +54,13 @@ brain/
 │   ├── projects/               # Project writeups
 │   ├── guides/                 # Tutorials, how-tos
 │   └── til/                    # Today I learned
-├── .github/workflows/
-│   └── trigger-deploy.yml      # Fires Vercel deploy hook on publish/ changes
+├── resources/briefings/        # Daily briefings, shown at /feed
+├── .github/
+│   ├── workflows/
+│   │   ├── trigger-deploy.yml  # Refreshes the blog's pages on publish/ changes
+│   │   └── trigger-rebuild.yml # Refreshes the feed's pages on resources/briefings/ changes
+│   └── scripts/
+│       └── refresh-site.sh     # Asks Vercel to re-render one section's pages
 ├── daily/                      # Private (not synced)
 ├── personal/                   # Private (not synced)
 └── ...
@@ -77,42 +82,34 @@ Your content with [[wikilinks]], callouts, math...
 
 **GitHub Action** (`.github/workflows/trigger-deploy.yml`):
 
-```yaml
-name: Trigger Blog Deploy
-on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'publish/**'
-
-jobs:
-  trigger:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Vercel Deploy Hook
-        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
-```
+It runs `.github/scripts/refresh-site.sh blog <every post's path>`. The script requests the
+section's index, then every page the index links to before and after that refresh (so added and
+removed pages are both caught), and the extra paths it is given (drafts, which `/blog` doesn't
+link to), each with the header `x-prerender-revalidate: $REVALIDATE_TOKEN`. A 200 or 404 is a
+success; anything else fails the run. `trigger-rebuild.yml` does the same for `feed`. Both can
+also be run by hand from the vault's Actions tab.
 
 ### Repo B: Astro Blog (`blueif16/astro-blog`)
 
 ```
 astro-blog/
-├── scripts/
-│   └── sync-content.sh          # Pre-build: clones vault, copies content
 ├── src/
-│   ├── content/                 # Populated at build time
-│   │   └── .gitkeep
-│   ├── content/config.ts        # Content collection schemas
+│   ├── live.config.ts           # Live collections blog + feed, read from the vault on request
+│   ├── utils/
+│   │   ├── github-loader.ts     # Live loader: GitHub API → entries, markdown → HTML
+│   │   └── markdown.mjs         # Markdown plugins, shared with astro.config.mjs
 │   ├── layouts/
 │   │   ├── BaseLayout.astro     # HTML head, fonts, global styles
 │   │   ├── PostLayout.astro     # Single post (ToC, reading time)
 │   │   └── SectionLayout.astro  # Section index
 │   ├── pages/
 │   │   ├── index.astro          # Home: recent posts
-│   │   ├── [...section]/
-│   │   │   ├── index.astro      # Dynamic section listing
-│   │   │   └── [...slug].astro  # Dynamic post page
+│   │   ├── blog/
+│   │   │   ├── index.astro      # Post list (on request, cached)
+│   │   │   └── [slug].astro     # Post page (on request, cached)
+│   │   ├── feed/
+│   │   │   ├── index.astro      # Briefing list (on request, cached)
+│   │   │   └── [date].astro     # One day's briefing (on request, cached)
 │   │   ├── rss.xml.ts           # RSS feed
 │   │   └── 404.astro
 │   ├── components/
@@ -128,53 +125,21 @@ astro-blog/
 └── package.json
 ```
 
-**Content Sync Script** (`scripts/sync-content.sh`):
+**Content loading.** The blog and feed are Astro live content collections
+(`experimental.liveContentCollections` in Astro 5). Their pages set `export const prerender = false`,
+and the Vercel adapter's `isr` option caches each one with no expiry until the next deploy or
+refresh. `githubLoader` lists the vault's tree on `main` on every render and fetches only the files
+it hasn't seen (blobs are cached by SHA). It renders markdown with Astro's own processor, using the
+same plugins as the build (`src/utils/markdown.mjs`). If GitHub fails, the page returns a 500, so an
+empty list is never cached. `src/content/` must stay absent: Astro would turn any folder there into
+a build-time collection, and a `blog` one would clash with the live `blog` collection.
 
-```bash
-#!/bin/bash
-set -euo pipefail
+**Vercel Config** (`vercel.json`): plain `npm run build`. The build doesn't read the vault.
 
-# Determine content directory BEFORE changing directories
-if [ -n "${GITHUB_WORKSPACE:-}" ]; then
-  CONTENT_DIR="$GITHUB_WORKSPACE/src/content"
-else
-  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-  CONTENT_DIR="$SCRIPT_DIR/../src/content"
-fi
-
-# Clone vault (sparse checkout — only publish/)
-TEMP_DIR=$(mktemp -d)
-git clone --depth 1 --filter=blob:none --sparse \
-  "https://x-access-token:${VAULT_TOKEN}@github.com/${VAULT_REPO}.git" \
-  "$TEMP_DIR"
-
-cd "$TEMP_DIR"
-git sparse-checkout set publish
-
-# Copy content
-rm -rf "$CONTENT_DIR"/*
-for section in "$TEMP_DIR"/publish/*/; do
-  if [ -d "$section" ]; then
-    section_name=$(basename "$section")
-    cp -r "$section" "$CONTENT_DIR/$section_name"
-  fi
-done
-
-rm -rf "$TEMP_DIR"
-```
-
-**Vercel Config** (`vercel.json`):
-
-```json
-{
-  "buildCommand": "bash scripts/sync-content.sh && npm run build",
-  "outputDirectory": "dist"
-}
-```
-
-**Environment Variables** (Vercel dashboard):
+**Environment Variables** (Vercel dashboard, read when a page renders):
 - `VAULT_TOKEN`: GitHub PAT with read access to `blueif16/brain`
 - `VAULT_REPO`: `blueif16/brain`
+- `REVALIDATE_TOKEN`: the ISR bypass token, read at build. A Vercel build fails without it.
 
 ---
 
@@ -224,8 +189,8 @@ Editorial, serif-first, print-magazine aesthetic.
 1. ✅ Vault repo pushed to `github.com/blueif16/brain`
 2. ✅ Blog repo created at `github.com/blueif16/astro-blog`
 3. ✅ Deployed to Vercel with environment variables
-4. ✅ Deploy hook configured in vault repo secrets
-5. ✅ Tested: auto-deploy working
+4. ✅ Refresh token set in Vercel and in the vault repo's secrets
+5. ✅ Tested: pages refresh without a deploy
 
 ### Environment Variables
 
@@ -233,7 +198,7 @@ Editorial, serif-first, print-magazine aesthetic.
 |----------|-------|-------|
 | `VAULT_TOKEN` | Vercel | GitHub PAT (fine-grained, read-only on `brain` repo) |
 | `VAULT_REPO` | Vercel | `blueif16/brain` |
-| `VERCEL_DEPLOY_HOOK` | GitHub Secrets (vault repo) | Vercel deploy hook URL |
+| `REVALIDATE_TOKEN` | Vercel (Production, Preview) and GitHub Secrets (vault repo) | The same random string in both (`openssl rand -hex 32`) |
 
 ---
 
@@ -264,11 +229,11 @@ Your content here. Use Obsidian features freely:
 
 Obsidian Git plugin auto-commits and pushes (default: every 5 minutes or on manual save).
 
-### 3. Wait ~60 Seconds
+### 3. Wait a Minute or Two
 
-- GitHub Action fires deploy hook
-- Vercel clones vault, syncs content, builds site
-- Changes go live
+- GitHub Action refreshes the section's pages
+- Vercel re-renders each one from the vault
+- Changes go live, with no build or deploy
 
 ### 4. Verify
 
@@ -285,15 +250,17 @@ Want a `/reads` section for book notes?
    mkdir ~/Desktop/brain/publish/reads
    ```
 
-2. **Update content collections** (`src/content/config.ts`):
+2. **Add a live collection** (`src/live.config.ts`), and pages for it under `src/pages/reads/`
+   with `export const prerender = false`, like `src/pages/blog/`:
    ```typescript
-   const reads = defineCollection({
-     loader: glob({ pattern: '**/*.md', base: './src/content/reads' }),
+   const reads = defineLiveCollection({
+     loader: githubLoader({ repo, path: 'publish/reads', pattern: /\.md$/, token, branch: 'main' }),
      schema: contentSchema,
    });
 
-   export const collections = { blog, notes, projects, guides, til, reads };
+   export const collections = { blog, feed, reads };
    ```
+   Then add a vault workflow that runs `.github/scripts/refresh-site.sh reads` on changes there.
 
 3. **Add to nav** (`src/components/Header.astro`):
    ```typescript
@@ -344,15 +311,8 @@ Just write. Obsidian Git handles commits.
 ```bash
 cd ~/Desktop/astro-blog
 
-# Copy content manually for testing
-cp -r ~/Desktop/brain/publish/* src/content/
-
-# Or use the sync script (requires env vars)
-export VAULT_TOKEN=your_token
-export VAULT_REPO=blueif16/brain
-bash scripts/sync-content.sh
-
-# Start dev server
+# Pages read the vault's main branch on each request; put VAULT_TOKEN and VAULT_REPO in .env
+# (see .env.example). Don't copy content into src/content/ (see "Content loading").
 npm run dev  # http://localhost:4321
 ```
 
@@ -360,21 +320,24 @@ npm run dev  # http://localhost:4321
 
 ## Troubleshooting
 
-### Deploy fails with "VAULT_TOKEN not set"
+### Blog or feed pages return 500
 
-Check Vercel environment variables. Token must have read access to vault repo.
+The page couldn't read the vault. Check the function logs in Vercel for `Failed to load …`, and
+check that `VAULT_TOKEN` (read access to the vault repo) and `VAULT_REPO` are set.
 
-### GitHub Action doesn't fire
+### Deploy fails with "REVALIDATE_TOKEN is not set"
 
-- Check `.github/workflows/trigger-deploy.yml` exists in vault repo
-- Verify `VERCEL_DEPLOY_HOOK` secret is set: `gh secret list`
-- Ensure changes are in `publish/` folder (action only triggers on that path)
+Add `REVALIDATE_TOKEN` to the Vercel project's environment variables, with the same value as the
+vault repo's secret.
 
-### Content not syncing
+### A change doesn't show up
 
-- Check Vercel build logs for sync script errors
-- Verify `VAULT_REPO` format: `username/repo-name` (no `github.com/`)
-- Ensure vault repo has content in `publish/` folders
+- Check the run of `trigger-deploy.yml` (blog) or `trigger-rebuild.yml` (feed) in the vault's
+  Actions tab. Each line it logs is a status and a path, and any status but 200 or 404 fails the run.
+- Verify the vault's `REVALIDATE_TOKEN` secret matches Vercel's: `gh secret list -R blueif16/brain`.
+  With the wrong token, a refresh request is just served the cached page.
+- Ensure the change is on `main` in `publish/blog/` or `resources/briefings/`
+- Run the workflow by hand from the Actions tab to refresh again
 
 ### Wikilinks not resolving
 
@@ -393,7 +356,7 @@ Wikilinks are converted to `/slug` format. Ensure target posts exist and use low
 | Styling | Custom CSS (Newsprint design) |
 | Markdown Processing | remark-obsidian-callout, remark-math, rehype-pretty-code, rehype-katex |
 | Deployment | Vercel |
-| CI/CD | GitHub Actions + Vercel Deploy Hooks |
+| CI/CD | GitHub Actions + Vercel on-demand ISR |
 
 ---
 
