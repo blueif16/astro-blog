@@ -184,7 +184,7 @@ Editorial, serif-first, print-magazine aesthetic.
 2. ✅ Blog repo created at `github.com/blueif16/astro-blog`
 3. ✅ Deployed to Vercel with environment variables
 4. ✅ Vault webhook (push → `/api/refresh`) with its secret in Vercel as `WEBHOOK_SECRET`
-5. ✅ Tested: pages render from the vault on request and are cached
+5. ✅ Tested (2026-11-12): pages render from the vault and are cached; a signed push drops only the changed section's pages (`x-vercel-cache: REVALIDATED`)
 
 ### Environment Variables
 
