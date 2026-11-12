@@ -190,7 +190,7 @@ Editorial, serif-first, print-magazine aesthetic.
 2. ✅ Blog repo created at `github.com/blueif16/astro-blog`
 3. ✅ Deployed to Vercel with environment variables
 4. ✅ Refresh token set in Vercel and in the vault repo's secrets
-5. ✅ Tested: pages refresh without a deploy
+5. ✅ Tested: pages render from the vault on request and are cached (refresh via the vault workflows not yet run: GitHub Actions blocked by an account billing lock, 2026-11-12)
 
 ### Environment Variables
 
