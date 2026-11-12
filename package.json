@@ -6,7 +6,8 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "node --test src/utils/*.test.ts"
   },
   "dependencies": {
     "@astrojs/markdown-remark": "6.3.10",
@@ -19,6 +20,7 @@
     "@studio-freight/lenis": "^1.0.42",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vercel/functions": "3.10.5",
     "astro": "^5.17.1",
     "framer-motion": "^12.35.0",
     "gsap": "^3.12.5",

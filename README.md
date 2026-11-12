@@ -12,12 +12,12 @@ Complete two-repo architecture for auto-deploying an Obsidian vault to an Astro 
 
 ## How It Works
 
-Write in Obsidian → Save → live in a minute or two, with no deploy.
+Write in Obsidian → Save → live seconds later, with no deploy.
 
 1. Write markdown in `publish/blog/` of your Obsidian vault
 2. Obsidian Git auto-commits and pushes
-3. GitHub Action asks Vercel to refresh the blog's pages
-4. Vercel re-renders each page from the vault (GitHub API) and caches it again
+3. The vault's GitHub webhook tells the site, which drops the blog's cached pages
+4. The next visit renders each page from the vault (GitHub API) and caches it again
 5. Changes go live
 
 ## Writing Posts
@@ -48,7 +48,7 @@ Newsprint-inspired aesthetic:
 - **Writing:** Obsidian
 - **Static Site Generator:** Astro 5.x
 - **Deployment:** Vercel
-- **CI/CD:** GitHub Actions + Vercel on-demand ISR
+- **CI/CD:** GitHub webhook + Vercel ISR cache tags
 
 ## Documentation
 

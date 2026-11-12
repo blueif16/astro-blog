@@ -9,18 +9,18 @@ Complete documentation for the two-repo blog system. New content goes live witho
 ```
 ┌──────────────────────┐            ┌──────────────────────────────┐
 │  REPO A (private)    │            │  REPO B (public)             │
-│  Obsidian Vault      │  refresh   │  Astro Blog Site on Vercel   │
+│  Obsidian Vault      │  webhook   │  Astro Blog Site on Vercel   │
 │  github.com/         │──────────▶ │  github.com/                 │
-│  blueif16/brain      │  requests  │  blueif16/astro-blog         │
+│  blueif16/brain      │  on push   │  blueif16/astro-blog         │
 │                      │            │                              │
 │  publish/blog/       │ ◀───────── │  /blog, /blog/<slug>         │
 │  resources/briefings/│  GitHub API│  /feed, /feed/<date>         │
 │                      │  on render │    rendered on request,      │
-│  .github/workflows/  │            │    cached by Vercel (ISR)    │
-│   trigger-deploy.yml │            │    until refreshed           │
-│   trigger-rebuild.yml│            │                              │
-│  .github/scripts/    │            │  every other page: static,   │
-│   refresh-site.sh    │            │  built on deploy             │
+│  Settings → Webhooks │            │    cached by Vercel (ISR),   │
+│   push → /api/refresh│            │    tagged blog / feed        │
+│                      │            │                              │
+│                      │            │  every other page: static,   │
+│                      │            │  built on deploy             │
 └──────────────────────┘            └──────────────────────────────┘
 ```
 
@@ -30,12 +30,13 @@ Complete documentation for the two-repo blog system. New content goes live witho
 
 1. **Write** in Obsidian (any device with vault synced)
 2. **Save** - Obsidian Git auto-commits and pushes to `github.com/blueif16/brain`
-3. **Refresh** - A GitHub Action sees the change (`publish/**` or `resources/briefings/**` on `main`)
-   and runs `.github/scripts/refresh-site.sh`, which requests each page of that section with the
-   header `x-prerender-revalidate: $REVALIDATE_TOKEN`
-4. **Render** - Vercel re-renders each requested page; the page reads the vault from the GitHub API
-   (`src/live.config.ts`, `src/utils/github-loader.ts`) and is cached again
-5. **Live** - Readers get the new page within a minute or two. Nothing is built or deployed.
+3. **Refresh** - The vault's GitHub webhook (repo Settings → Webhooks, not an Action) POSTs the push
+   to `/api/refresh`. It checks GitHub's signature, sees which of `publish/blog/` and
+   `resources/briefings/` on `main` changed, and drops that section's Vercel cache tag (`blog`,
+   `feed`) with one `dangerouslyDeleteByTag()` call
+4. **Render** - The next visit to any page of that section renders it fresh; the page reads the
+   vault from the GitHub API (`src/live.config.ts`, `src/utils/github-loader.ts`) and is cached again
+5. **Live** - Seconds after the push. Nothing is built or deployed.
 
 **Zero manual steps.** Write → save → live. A push to this repo still deploys as before, and a
 deploy clears the cache, so every page is rendered fresh on its first visit after it.
@@ -55,12 +56,6 @@ brain/
 │   ├── guides/                 # Tutorials, how-tos
 │   └── til/                    # Today I learned
 ├── resources/briefings/        # Daily briefings, shown at /feed
-├── .github/
-│   ├── workflows/
-│   │   ├── trigger-deploy.yml  # Refreshes the blog's pages on publish/ changes
-│   │   └── trigger-rebuild.yml # Refreshes the feed's pages on resources/briefings/ changes
-│   └── scripts/
-│       └── refresh-site.sh     # Asks Vercel to re-render one section's pages
 ├── daily/                      # Private (not synced)
 ├── personal/                   # Private (not synced)
 └── ...
@@ -80,14 +75,11 @@ draft: false
 Your content with [[wikilinks]], callouts, math...
 ```
 
-**GitHub Action** (`.github/workflows/trigger-deploy.yml`):
-
-It runs `.github/scripts/refresh-site.sh blog <every post's path>`. The script requests the
-section's index, then every page the index links to before and after that refresh (so added and
-removed pages are both caught), and the extra paths it is given (drafts, which `/blog` doesn't
-link to), each with the header `x-prerender-revalidate: $REVALIDATE_TOKEN`. A 200 or 404 is a
-success; anything else fails the run. `trigger-rebuild.yml` does the same for `feed`. Both can
-also be run by hand from the vault's Actions tab.
+**GitHub webhook** (vault repo → Settings → Webhooks): event `push`, URL
+`https://me.infinityopus.com/api/refresh`, content type `application/json` (Astro refuses
+cross-site form posts), secret `WEBHOOK_SECRET`. GitHub keeps each delivery with the endpoint's
+answer: `Refreshed blog` (200), `Nothing to refresh` (202), or `Bad signature` (401). Webhooks
+aren't GitHub Actions, so Actions billing or limits don't affect them.
 
 ### Repo B: Astro Blog (`blueif16/astro-blog`)
 
@@ -127,8 +119,10 @@ astro-blog/
 
 **Content loading.** The blog and feed are Astro live content collections
 (`experimental.liveContentCollections` in Astro 5). Their pages set `export const prerender = false`,
-and the Vercel adapter's `isr` option caches each one with no expiry until the next deploy or
-refresh. `githubLoader` lists the vault's tree on `main` on every render and fetches only the files
+and the Vercel adapter's `isr` option caches each one with no expiry until the next deploy, or until
+its section's cache tag is dropped. Each page tags itself with `addCacheTag()` from
+`@vercel/functions` (ISR responses can't set the `Vercel-Cache-Tag` header), before anything can
+return, so a cached 404 is dropped too. `githubLoader` lists the vault's tree on `main` on every render and fetches only the files
 it hasn't seen (blobs are cached by SHA). It renders markdown with Astro's own processor, using the
 same plugins as the build (`src/utils/markdown.mjs`). If GitHub fails, the page returns a 500, so an
 empty list is never cached. `src/content/` must stay absent: Astro would turn any folder there into
@@ -139,7 +133,7 @@ a build-time collection, and a `blog` one would clash with the live `blog` colle
 **Environment Variables** (Vercel dashboard, read when a page renders):
 - `VAULT_TOKEN`: GitHub PAT with read access to `blueif16/brain`
 - `VAULT_REPO`: `blueif16/brain`
-- `REVALIDATE_TOKEN`: the ISR bypass token, read at build. A Vercel build fails without it.
+- `WEBHOOK_SECRET`: the GitHub webhook's secret. A Vercel build fails without it.
 
 ---
 
@@ -189,8 +183,8 @@ Editorial, serif-first, print-magazine aesthetic.
 1. ✅ Vault repo pushed to `github.com/blueif16/brain`
 2. ✅ Blog repo created at `github.com/blueif16/astro-blog`
 3. ✅ Deployed to Vercel with environment variables
-4. ✅ Refresh token set in Vercel and in the vault repo's secrets
-5. ✅ Tested: pages render from the vault on request and are cached (refresh via the vault workflows not yet run: GitHub Actions blocked by an account billing lock, 2026-11-12)
+4. ✅ Vault webhook (push → `/api/refresh`) with its secret in Vercel as `WEBHOOK_SECRET`
+5. ✅ Tested: pages render from the vault on request and are cached
 
 ### Environment Variables
 
@@ -198,7 +192,7 @@ Editorial, serif-first, print-magazine aesthetic.
 |----------|-------|-------|
 | `VAULT_TOKEN` | Vercel | GitHub PAT (fine-grained, read-only on `brain` repo) |
 | `VAULT_REPO` | Vercel | `blueif16/brain` |
-| `REVALIDATE_TOKEN` | Vercel (Production, Preview) and GitHub Secrets (vault repo) | The same random string in both (`openssl rand -hex 32`) |
+| `WEBHOOK_SECRET` | Vercel (Production, Preview) and the vault repo's webhook | The same random string in both (`openssl rand -hex 32`) |
 
 ---
 
@@ -229,11 +223,11 @@ Your content here. Use Obsidian features freely:
 
 Obsidian Git plugin auto-commits and pushes (default: every 5 minutes or on manual save).
 
-### 3. Wait a Minute or Two
+### 3. Reload
 
-- GitHub Action refreshes the section's pages
-- Vercel re-renders each one from the vault
-- Changes go live, with no build or deploy
+- GitHub's webhook tells the site which section changed
+- The site drops that section's cached pages
+- The next visit renders each one fresh from the vault, with no build or deploy
 
 ### 4. Verify
 
@@ -260,7 +254,8 @@ Want a `/reads` section for book notes?
 
    export const collections = { blog, feed, reads };
    ```
-   Then add a vault workflow that runs `.github/scripts/refresh-site.sh reads` on changes there.
+   Tag its pages with `await addCacheTag('reads')`, and add `reads: 'publish/reads/'` to the
+   sections in `src/utils/refresh.ts`, so a push there drops the tag.
 
 3. **Add to nav** (`src/components/Header.astro`):
    ```typescript
@@ -325,19 +320,19 @@ npm run dev  # http://localhost:4321
 The page couldn't read the vault. Check the function logs in Vercel for `Failed to load …`, and
 check that `VAULT_TOKEN` (read access to the vault repo) and `VAULT_REPO` are set.
 
-### Deploy fails with "REVALIDATE_TOKEN is not set"
+### Deploy fails with "WEBHOOK_SECRET is not set"
 
-Add `REVALIDATE_TOKEN` to the Vercel project's environment variables, with the same value as the
-vault repo's secret.
+Add `WEBHOOK_SECRET` to the Vercel project's environment variables, with the same value as the
+vault webhook's secret.
 
 ### A change doesn't show up
 
-- Check the run of `trigger-deploy.yml` (blog) or `trigger-rebuild.yml` (feed) in the vault's
-  Actions tab. Each line it logs is a status and a path, and any status but 200 or 404 fails the run.
-- Verify the vault's `REVALIDATE_TOKEN` secret matches Vercel's: `gh secret list -R blueif16/brain`.
-  With the wrong token, a refresh request is just served the cached page.
-- Ensure the change is on `main` in `publish/blog/` or `resources/briefings/`
-- Run the workflow by hand from the Actions tab to refresh again
+- Check the push's delivery in the vault repo → Settings → Webhooks → Recent Deliveries, or
+  `gh api repos/blueif16/brain/hooks/<id>/deliveries`. `Bad signature` (401) means the webhook's
+  secret and Vercel's `WEBHOOK_SECRET` differ; `Nothing to refresh` means the push didn't touch
+  `publish/blog/` or `resources/briefings/` on `main`.
+- Redeliver it from the same page to refresh again, or drop the tag by hand:
+  `vercel cache dangerously-delete --tag blog` (or `feed`)
 
 ### Wikilinks not resolving
 
@@ -356,7 +351,7 @@ Wikilinks are converted to `/slug` format. Ensure target posts exist and use low
 | Styling | Custom CSS (Newsprint design) |
 | Markdown Processing | remark-obsidian-callout, remark-math, rehype-pretty-code, rehype-katex |
 | Deployment | Vercel |
-| CI/CD | GitHub Actions + Vercel on-demand ISR |
+| CI/CD | GitHub webhook + Vercel ISR cache tags |
 
 ---
 
