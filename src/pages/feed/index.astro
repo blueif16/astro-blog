@@ -2,10 +2,16 @@
 // The feed: a briefing for each day, newest first, grouped by month. Each row is the day, its
 // reading time, and the leads of its highlights (the bullets under "## 重点").
 import JournalLayout from '../../layouts/JournalLayout.astro';
-import { getCollection } from 'astro:content';
+import { getLiveCollection } from 'astro:content';
 import { fmtDay, fmtDayShort, fmtMonth, fmtWeekdayShort, highlights, isoDay, readingMinutes } from '../../utils/journal';
 
-const days = (await getCollection('feed'))
+// Rendered from the vault on request; Vercel keeps it until the vault's workflow refreshes it.
+export const prerender = false;
+
+const { entries, error } = await getLiveCollection('feed');
+if (error) throw error;
+
+const days = entries
   .map((entry) => ({ entry, date: new Date(entry.data.date), slug: isoDay(new Date(entry.data.date)) }))
   .sort((a, b) => b.date.getTime() - a.date.getTime())
   // One page per day, as the day pages have it.
@@ -55,14 +61,14 @@ const first = days[days.length - 1];
         </div>
         <ol class="j-list">
           {list.map((d) => {
-            const points = highlights(d.entry.body, 3);
+            const points = highlights(d.entry.data.body, 3);
             return (
               <li>
                 <a class="phi j-row" href={`/feed/${d.slug}`}>
                   <span class="cell a"><span class="j-row-title">{fmtWeekdayShort(d.date)} {fmtDayShort(d.date)}</span></span>
                   <span class="cell b j-row-meta">
                     <time datetime={d.slug}>{d.slug}</time>
-                    <span>{readingMinutes(d.entry.body)} min read</span>
+                    <span>{readingMinutes(d.entry.data.body)} min read</span>
                   </span>
                   <span class="cell c">
                     {points.length > 0 && (

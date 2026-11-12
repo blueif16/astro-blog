@@ -1,8 +1,15 @@
 import { defineConfig } from 'astro/config';
 import vercel from '@astrojs/vercel';
-import remarkObsidianCallout from 'remark-obsidian-callout';
-import rehypePrettyCode from 'rehype-pretty-code';
 import react from '@astrojs/react';
+import { markdown } from './src/utils/markdown.mjs';
+
+// The blog and feed pages are rendered on request from the vault and cached by Vercel until the
+// vault's workflows refresh them with this token, so a new post needs no deploy. Without it the
+// cached pages would never refresh, so a Vercel build stops here.
+const revalidateToken = process.env.REVALIDATE_TOKEN;
+if (process.env.VERCEL && !revalidateToken) {
+  throw new Error('REVALIDATE_TOKEN is not set; the blog and feed pages could never be refreshed.');
+}
 
 export default defineConfig({
   // Used for social preview images and links.
@@ -10,20 +17,15 @@ export default defineConfig({
   output: 'static',
   adapter: vercel({
     imageService: true,
+    isr: {
+      bypassToken: revalidateToken,
+    },
   }),
 
-  markdown: {
-    // Code blocks go to rehype-pretty-code below, not Astro's own highlighter.
-    syntaxHighlight: false,
-    remarkPlugins: [
-      remarkObsidianCallout,
-    ],
-    rehypePlugins: [
-      [rehypePrettyCode, {
-        theme: 'github-light',
-        defaultLang: 'plaintext',
-      }],
-    ],
+  markdown,
+
+  experimental: {
+    liveContentCollections: true,
   },
 
   integrations: [react()],

@@ -1,7 +1,7 @@
 # Blog Post Format
 
 Push `.md` files to `publish/blog/` in your brain repo (`blueif16/brain`).
-The site rebuilds automatically and each file becomes a blog entry.
+Each file becomes a blog entry within a minute or two of the push, with no deploy.
 
 ## Frontmatter
 
@@ -42,6 +42,9 @@ publish/blog/
   on-taste.md              → /blog/on-taste
 ```
 
-## Rebuild
+## Going live
 
-Pushing to `publish/blog/` on `main` triggers a Vercel deploy via GitHub Action.
+The site reads `publish/blog/` from `main` when a page is asked for, and Vercel keeps each page
+until it is refreshed. Pushing to `publish/` on `main` runs the vault's
+`.github/workflows/trigger-deploy.yml`, which refreshes `/blog` and every post page. To refresh by
+hand, run that workflow from the vault's Actions tab.
