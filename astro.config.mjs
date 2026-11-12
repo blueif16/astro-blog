@@ -3,12 +3,12 @@ import vercel from '@astrojs/vercel';
 import react from '@astrojs/react';
 import { markdown } from './src/utils/markdown.mjs';
 
-// The blog and feed pages are rendered on request from the vault and cached by Vercel until the
-// vault's workflows refresh them with this token, so a new post needs no deploy. Without it the
-// cached pages would never refresh, so a Vercel build stops here.
-const revalidateToken = process.env.REVALIDATE_TOKEN;
-if (process.env.VERCEL && !revalidateToken) {
-  throw new Error('REVALIDATE_TOKEN is not set; the blog and feed pages could never be refreshed.');
+// The blog and feed pages are rendered on request from the vault and cached by Vercel with a cache
+// tag per section, until /api/refresh, which the vault's GitHub webhook calls on every push, drops
+// the tag, so a new post needs no deploy. Without the webhook's secret every push would be turned
+// away and the cached pages would never refresh, so a Vercel build stops here.
+if (process.env.VERCEL && !process.env.WEBHOOK_SECRET) {
+  throw new Error('WEBHOOK_SECRET is not set; the blog and feed pages could never be refreshed.');
 }
 
 export default defineConfig({
@@ -18,7 +18,8 @@ export default defineConfig({
   adapter: vercel({
     imageService: true,
     isr: {
-      bypassToken: revalidateToken,
+      // The webhook's endpoint answers each push itself; it mustn't be a cached page.
+      exclude: ['/api/refresh'],
     },
   }),
 

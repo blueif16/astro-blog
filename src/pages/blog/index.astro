@@ -4,10 +4,13 @@
 // the right.
 import JournalLayout from '../../layouts/JournalLayout.astro';
 import { getLiveCollection } from 'astro:content';
+import { addCacheTag } from '@vercel/functions';
 import { excerpt, fmtDay, fmtDayShort, readingMinutes, tidy } from '../../utils/journal';
 
-// Rendered from the vault on request; Vercel keeps it until the vault's workflow refreshes it.
+// Rendered from the vault on request; Vercel keeps it until a push to the vault drops this tag
+// (src/pages/api/refresh.ts). Tagged before anything can return, so a cached 404 goes too.
 export const prerender = false;
+await addCacheTag('blog');
 
 const section = 'blog';
 
