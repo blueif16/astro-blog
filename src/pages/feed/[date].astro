@@ -5,33 +5,29 @@
 // version is the feed's index now, /feed.)
 import JournalLayout from '../../layouts/JournalLayout.astro';
 import Contents from '../../components/journal/Contents.astro';
-import { getCollection, render } from 'astro:content';
-import type { CollectionEntry } from 'astro:content';
+import { getLiveCollection, getLiveEntry, render } from 'astro:content';
 import { contentsOf, fmtDay, fmtWeekday, isoDay, readingMinutes } from '../../utils/journal';
 
-export async function getStaticPaths() {
-  const days = (await getCollection('feed'))
-    .map((entry) => ({ entry, slug: isoDay(new Date(entry.data.date)) }))
-    .sort((a, b) => a.slug.localeCompare(b.slug))
-    .filter((d, i, all) => all.findIndex((o) => o.slug === d.slug) === i);
-  return days.map((d, i) => ({
-    params: { date: d.slug },
-    props: {
-      entry: d.entry,
-      previous: i > 0 ? days[i - 1].slug : undefined,
-      next: i < days.length - 1 ? days[i + 1].slug : undefined,
-    },
-  }));
-}
+// Rendered from the vault on request; Vercel keeps it until the vault's workflow refreshes it.
+export const prerender = false;
 
-type Props = {
-  entry: CollectionEntry<'feed'>;
-  previous?: string;
-  next?: string;
-};
-
-const { entry, previous, next } = Astro.props;
 const { date: slug } = Astro.params;
+
+const { entries, error: listError } = await getLiveCollection('feed');
+if (listError) throw listError;
+const days = entries
+  .map((entry) => ({ entry, slug: isoDay(new Date(entry.data.date)) }))
+  .sort((a, b) => a.slug.localeCompare(b.slug))
+  .filter((d, i, all) => all.findIndex((o) => o.slug === d.slug) === i);
+const i = days.findIndex((d) => d.slug === slug);
+if (i < 0) {
+  return new Response(null, { status: 404, statusText: 'Not found' });
+}
+const previous = i > 0 ? days[i - 1].slug : undefined;
+const next = i < days.length - 1 ? days[i + 1].slug : undefined;
+
+const { entry, error } = await getLiveEntry('feed', days[i].entry.id);
+if (!entry) throw error;
 const { Content, headings } = await render(entry);
 const date = new Date(entry.data.date);
 const contents = contentsOf(headings);
@@ -53,7 +49,7 @@ const tags = entry.data.tags.filter((t) => t !== 'briefing');
       <div class="cell c col">
         <dl class="meta">
           <div><dt>Date</dt><dd><time datetime={slug}>{slug}</time></dd></div>
-          <div><dt>Reading</dt><dd>{readingMinutes(entry.body)} min</dd></div>
+          <div><dt>Reading</dt><dd>{readingMinutes(entry.data.body)} min</dd></div>
           {tags.length > 0 && <div><dt>Tags</dt><dd>{tags.join(', ')}</dd></div>}
           <div><dt>Archive</dt><dd><a href="/feed">Every day</a></dd></div>
         </dl>

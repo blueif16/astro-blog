@@ -3,22 +3,23 @@
 // by year. Title on the left, date and reading time in the narrow column, the opening lines on
 // the right.
 import JournalLayout from '../../layouts/JournalLayout.astro';
-import { getCollection } from 'astro:content';
+import { getLiveCollection } from 'astro:content';
 import { excerpt, fmtDay, fmtDayShort, readingMinutes, tidy } from '../../utils/journal';
 
-export async function getStaticPaths() {
-  const sections = ['blog'];
-  return sections.map((section) => ({ params: { section } }));
-}
+// Rendered from the vault on request; Vercel keeps it until the vault's workflow refreshes it.
+export const prerender = false;
 
-const { section } = Astro.params;
+const section = 'blog';
 
 const sectionTitles: Record<string, string> = {
   blog: 'Blog',
 };
-const name = sectionTitles[section!] ?? section!;
+const name = sectionTitles[section] ?? section;
 
-const posts = (await getCollection(section as 'blog'))
+const { entries, error } = await getLiveCollection('blog');
+if (error) throw error;
+
+const posts = entries
   .filter((post) => !post.data.draft)
   .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 
@@ -66,14 +67,14 @@ const latest = posts[0];
       <ol class="j-list">
         {byYear.get(year)!.map((post) => {
           const described = tidy(post.data.description);
-          const lede = described.length > 12 ? described : excerpt(post.body);
+          const lede = described.length > 12 ? described : excerpt(post.data.body);
           return (
             <li>
               <a class="phi j-row" href={`/${section}/${post.id}`}>
                 <span class="cell a"><span class="j-row-title">{post.data.title}</span></span>
                 <span class="cell b j-row-meta">
                   <time datetime={post.data.date.toISOString()}>{fmtDayShort(post.data.date)}</time>
-                  <span>{readingMinutes(post.body)} min read</span>
+                  <span>{readingMinutes(post.data.body)} min read</span>
                 </span>
                 <span class="cell c">{lede && <span class="j-row-text">{lede}</span>}</span>
               </a>

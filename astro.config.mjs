@@ -13,5 +13,9 @@ export default defineConfig({
 
   markdown,
 
+  experimental: {
+    liveContentCollections: true,
+  },
+
   integrations: [react()],
 });
