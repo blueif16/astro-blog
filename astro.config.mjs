@@ -1,8 +1,7 @@
 import { defineConfig } from 'astro/config';
 import vercel from '@astrojs/vercel';
-import remarkObsidianCallout from 'remark-obsidian-callout';
-import rehypePrettyCode from 'rehype-pretty-code';
 import react from '@astrojs/react';
+import { markdown } from './src/utils/markdown.mjs';
 
 export default defineConfig({
   // Used for social preview images and links.
@@ -12,19 +11,7 @@ export default defineConfig({
     imageService: true,
   }),
 
-  markdown: {
-    // Code blocks go to rehype-pretty-code below, not Astro's own highlighter.
-    syntaxHighlight: false,
-    remarkPlugins: [
-      remarkObsidianCallout,
-    ],
-    rehypePlugins: [
-      [rehypePrettyCode, {
-        theme: 'github-light',
-        defaultLang: 'plaintext',
-      }],
-    ],
-  },
+  markdown,
 
   integrations: [react()],
 });
